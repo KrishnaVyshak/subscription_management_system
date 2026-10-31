@@ -111,3 +111,16 @@ Where `docs/BACKEND_SPEC.md` is silent or does not match this repo, this file re
 - `POST /invoices/send-bulk { invoiceIds }` (max 100) sends one by one and reports per-invoice results. One failure doesn't stop the rest.
 - `POST /invoices/:id/remind` only works for overdue invoices (`NOT_OVERDUE`). It does not change the invoice.
 - `GET /invoices?format=csv` exports every row matching the filters (up to 50,000) with the same sort, as RFC 4180 CSV.
+
+## Portal (phase 8)
+- `/portal/*` requires role `customer` and a linked customer row (403 otherwise). Every lookup is scoped by `req.user.customerId`. Another customer's ids return **404**, never 403, so ids can't be probed.
+- Customers never see internal drafts: subscriptions in `draft` and invoices in `draft` are hidden from lists, counts and detail (404).
+- The portal hides staff-only fields: subscription `notes`, `salesperson_id`, `created_by`, and the invoice `company_snapshot` (the PDF still shows the company).
+- Portal actions reuse the subscription service, so the plan flags apply unchanged. Customers never `force`.
+  - `pause`: active only.
+  - `resume`: paused only.
+  - `cancel`: active or paused only. It closes with reason `customer_cancelled` and needs `plan.closable` before expiry.
+  - `renew`: same rules as staff.
+  - `addons { add: [{ productId, variantId?, quantity }], remove: [lineId] }`: add-on products only, effective next period.
+- `allowedActions` in the portal is `pause | resume | cancel | renew | addons`.
+- `PATCH /portal/profile` can change `fullName` (login profile) plus the customer's `name`, `phone`, `billingAddress` and `gstin`. The email is the login, so it is ignored.
