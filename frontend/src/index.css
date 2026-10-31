@@ -1,13 +1,15 @@
 @import 'tailwindcss';
 
 /*
- * Brightloop design tokens.
+ * Brightloop design tokens: the "Ledger" language.
  *
- * Brand palette: Tide (action: buttons, links, focus, selection), Ink (text, structure),
- * Paper (surfaces) and Volt (the signature spark, used sparingly). The roles hold in both themes.
+ * A billing tool should read like a well-set statement. Sheets of white lie on a Stone canvas,
+ * Ink carries text and every primary action, and Cobalt (the carbon-copy blue) marks focus,
+ * links and selection. Structure comes from rules, not shadows: hairlines between rows, a heavy
+ * Ink rule where a new section starts.
  *
  * Three layers:
- *   1. Raw brand scales (`ink-*`, `volt-*`, `tide-*`) for brand moments: logo, hero, sidebar.
+ *   1. Raw scales (`stone-*`, `cobalt-*`) for brand moments: logo, swatches.
  *   2. Semantic tokens (`--background`, `--primary`, `--success-soft`, …) per theme on :root / .dark.
  *      Components use only these, so dark mode is a token swap.
  *   3. `@theme inline` maps semantic tokens to utilities (`bg-card`, `text-muted-foreground`).
@@ -18,95 +20,46 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
-  --font-sans: 'Geist', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
-  --font-serif: 'Spectral', ui-serif, Georgia, serif;
-  --font-mono: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  --font-sans: 'Archivo', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
 
-  /* Ink: blue-black neutrals, hue 270. */
-  --color-ink-50: oklch(0.975 0.004 270);
-  --color-ink-100: oklch(0.94 0.006 270);
-  --color-ink-200: oklch(0.87 0.009 270);
-  --color-ink-300: oklch(0.76 0.012 270);
-  --color-ink-400: oklch(0.62 0.014 270);
-  --color-ink-500: oklch(0.5 0.015 270);
-  --color-ink-600: oklch(0.4 0.016 270);
-  --color-ink-700: oklch(0.32 0.017 270);
-  --color-ink-800: oklch(0.25 0.017 270);
-  --color-ink-900: oklch(0.2 0.016 270);
-  --color-ink-950: oklch(0.155 0.012 270);
+  /* Stone: neutrals with a faint green-grey cast, hue 100. Canvas, sheets, rules and Ink. */
+  --color-stone-50: oklch(0.985 0.003 100);
+  --color-stone-100: oklch(0.955 0.004 100);
+  --color-stone-200: oklch(0.925 0.005 100);
+  --color-stone-300: oklch(0.86 0.006 100);
+  --color-stone-400: oklch(0.72 0.008 100);
+  --color-stone-500: oklch(0.58 0.009 100);
+  --color-stone-600: oklch(0.47 0.009 100);
+  --color-stone-700: oklch(0.37 0.009 100);
+  --color-stone-800: oklch(0.27 0.008 100);
+  --color-stone-900: oklch(0.2 0.008 100);
+  --color-stone-950: oklch(0.15 0.006 100);
 
-  /* Volt: the bright in Brightloop. Fill only (never text on light surfaces). */
-  --color-volt-50: oklch(0.985 0.03 123);
-  --color-volt-100: oklch(0.965 0.07 123);
-  --color-volt-200: oklch(0.94 0.13 123);
-  --color-volt-300: oklch(0.905 0.19 123);
-  --color-volt-400: oklch(0.85 0.2 125);
-  --color-volt-500: oklch(0.76 0.19 127);
-  --color-volt-600: oklch(0.62 0.16 130);
-  --color-volt-700: oklch(0.5 0.13 131);
-  --color-volt-800: oklch(0.4 0.1 132);
-  --color-volt-900: oklch(0.33 0.08 133);
+  /* Cobalt: the carbon-copy blue. Focus, links, selection, first data series. */
+  --color-cobalt-50: oklch(0.97 0.015 268);
+  --color-cobalt-100: oklch(0.93 0.04 268);
+  --color-cobalt-200: oklch(0.86 0.08 268);
+  --color-cobalt-300: oklch(0.76 0.13 268);
+  --color-cobalt-400: oklch(0.65 0.18 268);
+  --color-cobalt-500: oklch(0.55 0.21 268);
+  --color-cobalt-600: oklch(0.48 0.2 268);
+  --color-cobalt-700: oklch(0.41 0.17 268);
+  --color-cobalt-800: oklch(0.34 0.13 268);
+  --color-cobalt-900: oklch(0.27 0.09 268);
 
-  /* Tide: the action colour. A deep teal that sits beside Volt on the wheel. */
-  --color-tide-50: oklch(0.975 0.015 195);
-  --color-tide-100: oklch(0.945 0.035 195);
-  --color-tide-200: oklch(0.885 0.06 195);
-  --color-tide-300: oklch(0.8 0.09 195);
-  --color-tide-400: oklch(0.7 0.11 194);
-  --color-tide-500: oklch(0.58 0.11 195);
-  --color-tide-600: oklch(0.49 0.095 195);
-  --color-tide-700: oklch(0.42 0.08 196);
-  --color-tide-800: oklch(0.35 0.065 197);
-  --color-tide-900: oklch(0.28 0.05 198);
-
-  --color-paper: oklch(0.985 0.006 85);
-
-  --shadow-xs: 0 1px 2px 0 oklch(0.2 0.016 270 / 0.06);
-  --shadow-card: 0 1px 0 0 oklch(0.2 0.016 270 / 0.03), 0 2px 6px -2px oklch(0.2 0.016 270 / 0.06);
-  --shadow-lifted:
-    0 1px 0 0 oklch(0.2 0.016 270 / 0.03), 0 12px 24px -12px oklch(0.2 0.016 270 / 0.18);
+  /* One shadow, for things that float above the page (dialogs, toasts). Everything else is ruled. */
   --shadow-overlay:
-    0 24px 48px -12px oklch(0.15 0.02 270 / 0.3), 0 4px 12px -4px oklch(0.15 0.02 270 / 0.12);
-  --shadow-glow:
-    0 0 0 1px oklch(0.905 0.19 123 / 0.4), 0 8px 32px -6px oklch(0.905 0.19 123 / 0.45);
-  /* Pressed: the control sinks into the surface instead of changing size. */
-  --shadow-press:
-    inset 0 1px 2px 0 oklch(0.15 0.02 270 / 0.22), inset 0 0 0 1px oklch(0.15 0.02 270 / 0.06);
+    0 1px 0 0 oklch(0.15 0.006 100 / 0.04), 0 18px 40px -16px oklch(0.15 0.006 100 / 0.35);
 
-  --animate-dialog-in: dialog-in 200ms cubic-bezier(0.2, 0.9, 0.3, 1);
-  --animate-fade-in: fade-in 180ms ease-out;
-  --animate-orbit: orbit 14s linear infinite;
-  --animate-loop-ripple: loop-ripple 700ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
-  --animate-loop-glow: loop-glow 700ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
-  /* Settles without overshoot; shared with the loop ripple so press and ripple move as one. */
-  --ease-glide: cubic-bezier(0.22, 1, 0.36, 1);
-
-  /* Button press: the brand's open loop expands and turns from the click point. */
-  @keyframes loop-ripple {
-    from {
-      opacity: 0.7;
-      transform: scale(0.12) rotate(-60deg);
-    }
-    to {
-      opacity: 0;
-      transform: scale(1) rotate(50deg);
-    }
-  }
-  @keyframes loop-glow {
-    from {
-      opacity: 0.22;
-      transform: scale(0.1);
-    }
-    to {
-      opacity: 0;
-      transform: scale(0.85);
-    }
-  }
+  --ease-settle: cubic-bezier(0.25, 1, 0.5, 1);
+  --animate-dialog-in: dialog-in 160ms var(--ease-settle);
+  --animate-fade-in: fade-in 140ms ease-out;
 
   @keyframes dialog-in {
     from {
       opacity: 0;
-      transform: translateY(10px) scale(0.98);
+      transform: translateY(6px);
     }
   }
   @keyframes fade-in {
@@ -114,137 +67,137 @@
       opacity: 0;
     }
   }
-  @keyframes orbit {
-    to {
-      transform: rotate(360deg);
-    }
-  }
 }
 
 :root {
-  --radius: 0.75rem;
+  --radius: 3px;
 
-  --background: oklch(0.985 0.006 85);
-  --foreground: oklch(0.2 0.016 270);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.2 0.016 270);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.2 0.016 270);
+  /* Canvas is a shade below the sheets, so content reads as paper laid on a desk. */
+  --background: oklch(0.938 0.005 100);
+  --foreground: oklch(0.2 0.008 100);
+  --card: oklch(0.99 0.002 100);
+  --card-foreground: oklch(0.2 0.008 100);
+  --popover: oklch(0.995 0.002 100);
+  --popover-foreground: oklch(0.2 0.008 100);
+  --sunken: oklch(0.912 0.006 100);
 
-  /* Tide is the action colour in both themes; Ink is for text and the rail, Volt for highlights. */
-  --primary: oklch(0.49 0.095 195);
-  --primary-hover: oklch(0.43 0.085 195);
-  --primary-foreground: oklch(0.99 0.004 195);
-  --secondary: oklch(0.955 0.007 85);
-  --secondary-hover: oklch(0.925 0.009 85);
-  --secondary-foreground: oklch(0.2 0.016 270);
-  --muted: oklch(0.962 0.007 85);
-  --muted-foreground: oklch(0.5 0.013 270);
-  --accent: oklch(0.955 0.03 195);
-  --accent-foreground: oklch(0.42 0.08 196);
-  --highlight: oklch(0.905 0.19 123);
-  --highlight-foreground: oklch(0.2 0.016 270);
-  --link: oklch(0.49 0.095 195);
+  /* Ink is the primary action; Cobalt is the accent (focus, links, selection). */
+  --primary: oklch(0.2 0.008 100);
+  --primary-hover: oklch(0.32 0.009 100);
+  --primary-foreground: oklch(0.985 0.003 100);
+  --secondary: oklch(0.99 0.002 100);
+  --secondary-hover: oklch(0.955 0.004 100);
+  --secondary-foreground: oklch(0.2 0.008 100);
+  --muted: oklch(0.925 0.005 100);
+  --muted-foreground: oklch(0.45 0.009 100);
+  --subtle-foreground: oklch(0.58 0.009 100);
+  --accent: oklch(0.48 0.2 268);
+  --accent-soft: oklch(0.93 0.04 268);
+  --accent-soft-foreground: oklch(0.41 0.17 268);
+  --link: oklch(0.48 0.2 268);
 
-  --border: oklch(0.912 0.008 85);
-  --input: oklch(0.86 0.01 85);
-  --ring: oklch(0.58 0.11 195);
+  --border: oklch(0.87 0.006 100);
+  --input: oklch(0.76 0.008 100);
+  --rule: oklch(0.2 0.008 100);
+  --ring: oklch(0.55 0.21 268);
 
-  /* The app's navigation rail is Ink in both themes: the brand's anchor. */
-  --sidebar: oklch(0.2 0.016 270);
-  --sidebar-foreground: oklch(0.76 0.012 270);
-  --sidebar-muted: oklch(0.27 0.017 270);
-  --sidebar-border: oklch(0.29 0.017 270);
+  /* Inverse surface: toasts and tooltips flip against the page in both themes. */
+  --inverse: oklch(0.2 0.008 100);
+  --inverse-foreground: oklch(0.955 0.004 100);
+  --inverse-muted: oklch(0.72 0.008 100);
+  --inverse-success: oklch(0.78 0.15 150);
+  --inverse-warning: oklch(0.83 0.14 78);
+  --inverse-danger: oklch(0.72 0.17 27);
+  --inverse-accent: oklch(0.77 0.12 268);
 
-  /* Status. Each has a solid (icons, bars), a soft background and a readable foreground on it. */
-  --success: oklch(0.6 0.14 152);
-  --success-soft: oklch(0.955 0.04 152);
-  --success-soft-foreground: oklch(0.4 0.1 152);
-  --warning: oklch(0.74 0.16 65);
-  --warning-soft: oklch(0.965 0.045 80);
-  --warning-soft-foreground: oklch(0.47 0.12 55);
-  --danger: oklch(0.57 0.21 25);
-  --danger-hover: oklch(0.51 0.2 25);
-  --danger-foreground: oklch(0.99 0.005 25);
-  --danger-soft: oklch(0.96 0.025 20);
-  --danger-soft-foreground: oklch(0.48 0.18 25);
-  --info: oklch(0.57 0.16 262);
-  --info-soft: oklch(0.955 0.028 262);
-  --info-soft-foreground: oklch(0.45 0.16 264);
-  --brand-soft: oklch(0.95 0.035 195);
-  --brand-soft-foreground: oklch(0.42 0.085 196);
+  /* Status. Each has a solid (markers, bars), a soft background and a readable foreground on it. */
+  --success: oklch(0.56 0.13 150);
+  --success-soft: oklch(0.93 0.045 150);
+  --success-soft-foreground: oklch(0.38 0.09 150);
+  --warning: oklch(0.72 0.15 70);
+  --warning-soft: oklch(0.94 0.06 85);
+  --warning-soft-foreground: oklch(0.43 0.1 60);
+  --danger: oklch(0.53 0.19 27);
+  --danger-hover: oklch(0.47 0.18 27);
+  --danger-foreground: oklch(0.985 0.005 27);
+  --danger-soft: oklch(0.94 0.035 25);
+  --danger-soft-foreground: oklch(0.45 0.16 27);
+  --info: oklch(0.55 0.21 268);
+  --info-soft: oklch(0.93 0.04 268);
+  --info-soft-foreground: oklch(0.41 0.17 268);
 
-  /* Data viz: validated categorical order (tide, ember, cobalt). Volt is never a series colour. */
-  --chart-1: #0090a0;
-  --chart-2: #e0663a;
-  --chart-3: #3b6fd6;
-  --chart-grid: oklch(0.93 0.006 85);
-  --chart-axis: oklch(0.58 0.012 270);
+  /* Data viz: cobalt, saffron, then a neutral. Blue/orange stays distinct under common CVD. */
+  --chart-1: #3349d6;
+  --chart-2: #e07a2e;
+  --chart-3: #8a8b80;
+  --chart-grid: oklch(0.9 0.005 100);
+  --chart-axis: oklch(0.52 0.009 100);
 }
 
 .dark {
-  --background: oklch(0.155 0.012 270);
-  --foreground: oklch(0.955 0.006 85);
-  --card: oklch(0.2 0.014 270);
-  --card-foreground: oklch(0.955 0.006 85);
-  --popover: oklch(0.22 0.015 270);
-  --popover-foreground: oklch(0.955 0.006 85);
+  --background: oklch(0.17 0.005 100);
+  --foreground: oklch(0.935 0.004 100);
+  --card: oklch(0.205 0.006 100);
+  --card-foreground: oklch(0.935 0.004 100);
+  --popover: oklch(0.23 0.006 100);
+  --popover-foreground: oklch(0.935 0.004 100);
+  --sunken: oklch(0.145 0.005 100);
 
-  /* Same Tide as light, lifted for the dark surface; Ink text keeps it AA. */
-  --primary: oklch(0.72 0.11 192);
-  --primary-hover: oklch(0.77 0.1 190);
-  --primary-foreground: oklch(0.2 0.016 270);
-  --secondary: oklch(0.25 0.015 270);
-  --secondary-hover: oklch(0.29 0.017 270);
-  --secondary-foreground: oklch(0.94 0.006 85);
-  --muted: oklch(0.23 0.014 270);
-  --muted-foreground: oklch(0.69 0.012 270);
-  --accent: oklch(0.72 0.11 192 / 0.15);
-  --accent-foreground: oklch(0.85 0.08 192);
-  --highlight: oklch(0.905 0.19 123);
-  --highlight-foreground: oklch(0.2 0.016 270);
-  --link: oklch(0.8 0.09 192);
+  /* Ink flips to Stone: the primary action stays the highest-contrast thing on screen. */
+  --primary: oklch(0.935 0.004 100);
+  --primary-hover: oklch(0.85 0.005 100);
+  --primary-foreground: oklch(0.17 0.005 100);
+  --secondary: oklch(0.225 0.006 100);
+  --secondary-hover: oklch(0.27 0.007 100);
+  --secondary-foreground: oklch(0.935 0.004 100);
+  --muted: oklch(0.25 0.006 100);
+  --muted-foreground: oklch(0.7 0.008 100);
+  --subtle-foreground: oklch(0.58 0.008 100);
+  --accent: oklch(0.74 0.13 268);
+  --accent-soft: oklch(0.74 0.13 268 / 0.16);
+  --accent-soft-foreground: oklch(0.84 0.08 268);
+  --link: oklch(0.78 0.11 268);
 
-  --border: oklch(0.27 0.014 270);
-  --input: oklch(0.34 0.016 270);
-  --ring: oklch(0.72 0.11 192);
+  --border: oklch(0.3 0.007 100);
+  --input: oklch(0.4 0.008 100);
+  --rule: oklch(0.935 0.004 100);
+  --ring: oklch(0.74 0.13 268);
 
-  --sidebar: oklch(0.13 0.011 270);
-  --sidebar-foreground: oklch(0.72 0.012 270);
-  --sidebar-muted: oklch(0.21 0.014 270);
-  --sidebar-border: oklch(0.23 0.014 270);
+  --inverse: oklch(0.935 0.004 100);
+  --inverse-foreground: oklch(0.2 0.008 100);
+  --inverse-muted: oklch(0.45 0.009 100);
+  --inverse-success: oklch(0.5 0.13 150);
+  --inverse-warning: oklch(0.58 0.13 62);
+  --inverse-danger: oklch(0.52 0.19 27);
+  --inverse-accent: oklch(0.48 0.2 268);
 
-  --success: oklch(0.72 0.15 152);
-  --success-soft: oklch(0.72 0.15 152 / 0.14);
-  --success-soft-foreground: oklch(0.83 0.13 152);
-  --warning: oklch(0.8 0.15 70);
-  --warning-soft: oklch(0.8 0.15 70 / 0.14);
-  --warning-soft-foreground: oklch(0.86 0.12 78);
-  --danger: oklch(0.65 0.2 25);
-  --danger-hover: oklch(0.7 0.18 25);
-  --danger-foreground: oklch(0.99 0.005 25);
-  --danger-soft: oklch(0.65 0.2 25 / 0.15);
-  --danger-soft-foreground: oklch(0.81 0.11 22);
-  --info: oklch(0.72 0.12 262);
-  --info-soft: oklch(0.72 0.12 262 / 0.16);
-  --info-soft-foreground: oklch(0.84 0.08 262);
-  --brand-soft: oklch(0.72 0.11 192 / 0.16);
-  --brand-soft-foreground: oklch(0.85 0.08 192);
+  --success: oklch(0.72 0.14 150);
+  --success-soft: oklch(0.72 0.14 150 / 0.15);
+  --success-soft-foreground: oklch(0.84 0.11 150);
+  --warning: oklch(0.8 0.14 75);
+  --warning-soft: oklch(0.8 0.14 75 / 0.15);
+  --warning-soft-foreground: oklch(0.87 0.11 82);
+  --danger: oklch(0.64 0.19 27);
+  --danger-hover: oklch(0.69 0.17 27);
+  --danger-foreground: oklch(0.985 0.005 27);
+  --danger-soft: oklch(0.64 0.19 27 / 0.16);
+  --danger-soft-foreground: oklch(0.8 0.11 25);
+  --info: oklch(0.74 0.13 268);
+  --info-soft: oklch(0.74 0.13 268 / 0.16);
+  --info-soft-foreground: oklch(0.84 0.08 268);
 
-  --chart-1: #139fae;
-  --chart-2: #db6a3d;
-  --chart-3: #6088e8;
-  --chart-grid: oklch(0.26 0.014 270);
-  --chart-axis: oklch(0.6 0.012 270);
+  --chart-1: #7d8ff5;
+  --chart-2: #e8904d;
+  --chart-3: #9a9b90;
+  --chart-grid: oklch(0.27 0.006 100);
+  --chart-axis: oklch(0.62 0.008 100);
 }
 
 @theme inline {
-  --radius-sm: calc(var(--radius) - 6px);
-  --radius-md: calc(var(--radius) - 4px);
-  --radius-lg: calc(var(--radius) - 2px);
-  --radius-xl: var(--radius);
-  --radius-2xl: calc(var(--radius) + 4px);
-  --radius-3xl: calc(var(--radius) + 12px);
+  --radius-sm: calc(var(--radius) - 1px);
+  --radius-md: var(--radius);
+  --radius-lg: calc(var(--radius) + 1px);
+  --radius-xl: calc(var(--radius) + 3px);
 
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -252,6 +205,7 @@
   --color-card-foreground: var(--card-foreground);
   --color-popover: var(--popover);
   --color-popover-foreground: var(--popover-foreground);
+  --color-sunken: var(--sunken);
   --color-primary: var(--primary);
   --color-primary-hover: var(--primary-hover);
   --color-primary-foreground: var(--primary-foreground);
@@ -260,19 +214,23 @@
   --color-secondary-foreground: var(--secondary-foreground);
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
+  --color-subtle-foreground: var(--subtle-foreground);
   --color-accent: var(--accent);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-highlight: var(--highlight);
-  --color-highlight-foreground: var(--highlight-foreground);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-soft-foreground: var(--accent-soft-foreground);
   --color-link: var(--link);
   --color-border: var(--border);
   --color-input: var(--input);
+  --color-rule: var(--rule);
   --color-ring: var(--ring);
 
-  --color-sidebar: var(--sidebar);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar-muted: var(--sidebar-muted);
-  --color-sidebar-border: var(--sidebar-border);
+  --color-inverse: var(--inverse);
+  --color-inverse-foreground: var(--inverse-foreground);
+  --color-inverse-muted: var(--inverse-muted);
+  --color-inverse-success: var(--inverse-success);
+  --color-inverse-warning: var(--inverse-warning);
+  --color-inverse-danger: var(--inverse-danger);
+  --color-inverse-accent: var(--inverse-accent);
 
   --color-success: var(--success);
   --color-success-soft: var(--success-soft);
@@ -289,8 +247,6 @@
   --color-info: var(--info);
   --color-info-soft: var(--info-soft);
   --color-info-soft-foreground: var(--info-soft-foreground);
-  --color-brand-soft: var(--brand-soft);
-  --color-brand-soft-foreground: var(--brand-soft-foreground);
 
   --color-chart-1: var(--chart-1);
   --color-chart-2: var(--chart-2);
@@ -301,66 +257,55 @@
 
 /*
  * Type scale. Named `type-*` (not `text-*`) so they never collide with text colours in cn().
- * Spectral carries headlines and figures; Geist does the working text.
- *
- * Spectral weights by role (only these are loaded in index.html):
- *   200 ExtraLight  type-numeral    ornamental numbers, never data
- *   300 Light       type-display    hero headlines, big brand facts (italic for emphasis)
- *   400 Regular     type-h1         page titles; type-statement for pull quotes (italic too)
- *   500 Medium      type-figure     money and counts; also serif labels on colour fills
- * Larger means lighter: weight drops as size grows, so every role carries similar visual weight.
+ * One family, two voices: Archivo widens as it grows (display is 125% wide, working text 100%),
+ * and JetBrains Mono sets every figure, ID and label, so numbers line up like a printed statement.
  */
 @utility type-display {
-  font-family: var(--font-serif);
-  font-size: clamp(2.75rem, 6vw, 4.5rem);
-  line-height: 1.02;
-  font-weight: 300;
-  letter-spacing: -0.03em;
-  font-variant-numeric: lining-nums;
+  font-family: var(--font-sans);
+  font-size: clamp(2.5rem, 7vw, 5rem);
+  line-height: 0.94;
+  font-weight: 650;
+  font-stretch: 125%;
+  letter-spacing: -0.04em;
 }
 @utility type-h1 {
-  font-family: var(--font-serif);
-  font-size: 2.5rem;
-  line-height: 1.08;
-  font-weight: 400;
-  letter-spacing: -0.02em;
-}
-@utility type-statement {
-  font-family: var(--font-serif);
-  font-size: 1.75rem;
-  line-height: 1.2;
-  font-weight: 400;
-  letter-spacing: -0.015em;
-}
-@utility type-numeral {
-  font-family: var(--font-serif);
-  font-size: 3rem;
-  line-height: 1;
-  font-weight: 200;
-  letter-spacing: -0.02em;
-  font-variant-numeric: lining-nums;
+  font-family: var(--font-sans);
+  font-size: clamp(1.625rem, 3vw, 2rem);
+  line-height: 1.1;
+  font-weight: 620;
+  font-stretch: 115%;
+  letter-spacing: -0.03em;
 }
 @utility type-h2 {
   font-family: var(--font-sans);
-  font-size: 1.25rem;
-  line-height: 1.75rem;
+  font-size: 1.125rem;
+  line-height: 1.5rem;
   font-weight: 600;
-  letter-spacing: -0.025em;
+  font-stretch: 108%;
+  letter-spacing: -0.015em;
 }
 @utility type-h3 {
   font-family: var(--font-sans);
-  font-size: 0.9375rem;
-  line-height: 1.375rem;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
   font-weight: 600;
-  letter-spacing: -0.015em;
+  letter-spacing: -0.005em;
 }
 @utility type-figure {
-  font-family: var(--font-serif);
-  font-size: 2.375rem;
+  font-family: var(--font-mono);
+  font-size: 1.75rem;
   line-height: 1;
   font-weight: 500;
-  letter-spacing: -0.02em;
-  font-variant-numeric: lining-nums tabular-nums;
+  letter-spacing: -0.04em;
+  font-variant-numeric: tabular-nums;
+}
+@utility type-figure-lg {
+  font-family: var(--font-mono);
+  font-size: clamp(2rem, 4vw, 2.75rem);
+  line-height: 1;
+  font-weight: 500;
+  letter-spacing: -0.05em;
+  font-variant-numeric: tabular-nums;
 }
 @utility type-body {
   font-size: 0.875rem;
@@ -368,14 +313,14 @@
 }
 @utility type-caption {
   font-size: 0.75rem;
-  line-height: 1rem;
+  line-height: 1.05rem;
 }
-@utility type-overline {
+@utility type-label {
   font-family: var(--font-mono);
   font-size: 0.6875rem;
   line-height: 1rem;
   font-weight: 500;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
 }
 
@@ -399,14 +344,14 @@
     font-family: var(--font-sans);
     font-size: 0.875rem;
     line-height: 1.375rem;
-    letter-spacing: -0.006em;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    font-feature-settings: 'ss01';
   }
 
   ::selection {
-    background-color: oklch(0.905 0.19 123 / 0.6);
-    color: oklch(0.2 0.016 270);
+    background-color: var(--accent-soft);
+    color: var(--foreground);
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -426,17 +371,16 @@
  */
 [data-sonner-toaster] [data-sonner-toast] {
   transition:
-    transform 220ms var(--ease-glide),
-    opacity 160ms ease-out,
-    height 220ms var(--ease-glide);
+    transform 200ms var(--ease-settle),
+    opacity 140ms ease-out,
+    height 200ms var(--ease-settle);
 }
 /* Sonner sets every child's transition, so the buttons' hover states are declared here too. */
 [data-sonner-toaster] [data-sonner-toast] > * {
   transition:
-    opacity 160ms ease-out,
-    background-color 150ms,
-    color 150ms,
-    filter 150ms;
+    opacity 140ms ease-out,
+    background-color 120ms,
+    color 120ms;
 }
 [data-sonner-toaster] [data-sonner-toast][data-removed='true'],
 [data-sonner-toaster]

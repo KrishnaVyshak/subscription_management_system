@@ -25,35 +25,37 @@ export function Dialog({ open, onClose, title, description, footer, className, c
       onClick={(e) => e.target === ref.current && onClose?.()}
       aria-labelledby={title ? titleId : undefined}
       className={cn(
-        'm-auto w-[calc(100%-2rem)] max-w-md rounded-3xl border bg-popover p-0 text-popover-foreground shadow-overlay',
-        'backdrop:bg-black/50 backdrop:backdrop-blur-[2px] open:animate-dialog-in',
+        'm-auto w-[calc(100%-2rem)] max-w-md rounded-xl border bg-popover p-0 text-popover-foreground shadow-overlay',
+        'backdrop:bg-stone-950/45 open:animate-dialog-in',
         className,
       )}
     >
-      <div className="flex items-start gap-4 px-6 pt-6">
+      <header className="flex items-start gap-4 border-b px-5 py-4">
         <div className="min-w-0 flex-1">
           {title && (
             <h2 id={titleId} className="type-h2">
               {title}
             </h2>
           )}
-          {description && <p className="mt-1 text-sm text-muted-foreground">{description}</p>}
+          {description && (
+            <p className="mt-1 text-[0.8125rem] text-muted-foreground">{description}</p>
+          )}
         </div>
         <Button
-          variant="ghost"
+          variant="tertiary"
           size="icon-sm"
           aria-label="Close"
           onClick={onClose}
-          className="-mt-1 -mr-2"
+          className="-mt-0.5 -mr-1.5"
         >
           <X />
         </Button>
-      </div>
-      <div className="px-6 py-5">{children}</div>
+      </header>
+      <div className="px-5 py-5">{children}</div>
       {footer && (
-        <div className="flex flex-col-reverse gap-2 rounded-b-3xl border-t bg-muted/50 px-6 py-4 sm:flex-row sm:justify-end">
+        <footer className="flex flex-col-reverse gap-2 border-t bg-sunken/60 px-5 py-3 sm:flex-row sm:justify-end">
           {footer}
-        </div>
+        </footer>
       )}
     </dialog>
   );

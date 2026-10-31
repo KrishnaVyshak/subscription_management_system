@@ -16,10 +16,10 @@ export function Switch({ checked, defaultChecked = false, onCheckedChange, class
         onCheckedChange?.(!on);
       }}
       className={cn(
-        'relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full transition-colors outline-none',
-        'focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+        'relative inline-flex h-[1.125rem] w-8 shrink-0 cursor-pointer items-center rounded-sm border transition-colors duration-100 outline-none',
+        'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
         'disabled:cursor-not-allowed disabled:opacity-50',
-        on ? 'bg-primary' : 'bg-input',
+        on ? 'border-primary bg-primary' : 'border-input bg-muted hover:border-foreground/45',
         className,
       )}
       {...props}
@@ -27,9 +27,8 @@ export function Switch({ checked, defaultChecked = false, onCheckedChange, class
       <span
         aria-hidden="true"
         className={cn(
-          'size-4 rounded-full shadow-xs transition-transform',
-          on ? 'bg-primary-foreground' : 'bg-white dark:bg-ink-200',
-          on ? 'translate-x-[1.125rem]' : 'translate-x-0.5',
+          'size-3 rounded-[1px] transition-transform duration-150 ease-out',
+          on ? 'translate-x-[0.9375rem] bg-primary-foreground' : 'translate-x-0.5 bg-foreground/60',
         )}
       />
     </button>

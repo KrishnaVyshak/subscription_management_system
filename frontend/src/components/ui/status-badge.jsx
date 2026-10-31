@@ -4,19 +4,18 @@ import { Badge } from './badge';
 const STATUS_TONES = {
   draft: 'neutral',
   quotation: 'info',
-  confirmed: 'brand',
+  confirmed: 'ink',
   active: 'success',
   paused: 'warning',
-  closed: 'neutral',
+  closed: 'outline',
   paid: 'success',
   cancelled: 'danger',
 };
 
 export function StatusBadge({ status, className }) {
-  const label = status.charAt(0).toUpperCase() + status.slice(1);
   return (
     <Badge tone={STATUS_TONES[status] ?? 'neutral'} dot className={className}>
-      {label}
+      {status}
     </Badge>
   );
 }

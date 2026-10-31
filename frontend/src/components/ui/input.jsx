@@ -9,10 +9,10 @@ export function Input({ className, leading, trailing, type = 'text', ...props })
       type={type}
       className={cn(
         controlBase,
-        'h-10 px-3.5',
-        leading && 'pl-10',
-        trailing && 'pr-10',
-        type === 'number' && 'tabular-nums',
+        'h-9 px-3',
+        leading && 'pl-9',
+        trailing && 'pr-9',
+        (type === 'number' || type === 'date') && 'font-mono text-[0.8125rem] tabular-nums',
         !hasAffix && className,
       )}
       {...props}
@@ -21,12 +21,12 @@ export function Input({ className, leading, trailing, type = 'text', ...props })
   if (!hasAffix) return input;
 
   const affix =
-    'pointer-events-none absolute inset-y-0 flex items-center text-sm text-muted-foreground [&_svg]:size-4';
+    'pointer-events-none absolute inset-y-0 flex items-center font-mono text-xs text-muted-foreground [&_svg]:size-4';
   return (
     <div className={cn('relative', className)}>
-      {leading && <span className={cn(affix, 'left-3.5')}>{leading}</span>}
+      {leading && <span className={cn(affix, 'left-3')}>{leading}</span>}
       {input}
-      {trailing && <span className={cn(affix, 'right-3.5')}>{trailing}</span>}
+      {trailing && <span className={cn(affix, 'right-3')}>{trailing}</span>}
     </div>
   );
 }

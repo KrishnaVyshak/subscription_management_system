@@ -1,10 +1,11 @@
 import { cn } from '@/lib/utils';
 
+// Ledger rows: a heavy rule under the header, hairlines between entries, figures in mono.
 export function Table({ className, ...props }) {
   return (
     <div className="w-full overflow-x-auto">
       <table
-        className={cn('w-full caption-bottom border-collapse text-sm', className)}
+        className={cn('w-full caption-bottom border-collapse text-[0.8125rem]', className)}
         {...props}
       />
     </div>
@@ -12,7 +13,7 @@ export function Table({ className, ...props }) {
 }
 
 export function TableHeader({ className, ...props }) {
-  return <thead className={cn('bg-muted/60 [&_tr]:border-b', className)} {...props} />;
+  return <thead className={cn('[&_tr]:border-b-rule', className)} {...props} />;
 }
 
 export function TableBody({ className, ...props }) {
@@ -21,7 +22,10 @@ export function TableBody({ className, ...props }) {
 
 export function TableRow({ className, ...props }) {
   return (
-    <tr className={cn('border-b transition-colors hover:bg-muted/50', className)} {...props} />
+    <tr
+      className={cn('border-b transition-colors duration-75 hover:bg-sunken/60', className)}
+      {...props}
+    />
   );
 }
 
@@ -31,7 +35,7 @@ export function TableHead({ className, numeric, ...props }) {
     <th
       scope="col"
       className={cn(
-        'h-10 px-4 text-left align-middle type-overline whitespace-nowrap text-muted-foreground',
+        'h-9 px-4 text-left align-bottom pb-2 type-label whitespace-nowrap text-muted-foreground',
         numeric && 'text-right',
         className,
       )}
@@ -43,7 +47,11 @@ export function TableHead({ className, numeric, ...props }) {
 export function TableCell({ className, numeric, ...props }) {
   return (
     <td
-      className={cn('px-4 py-3 align-middle', numeric && 'text-right tabular-nums', className)}
+      className={cn(
+        'px-4 py-2.5 align-middle',
+        numeric && 'text-right font-mono text-[0.8125rem] tabular-nums',
+        className,
+      )}
       {...props}
     />
   );

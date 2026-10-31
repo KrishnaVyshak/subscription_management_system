@@ -14,7 +14,7 @@ export function ThemeToggle({ className }) {
     <div
       role="radiogroup"
       aria-label="Colour theme"
-      className={cn('inline-flex items-center gap-0.5 rounded-full bg-muted p-1', className)}
+      className={cn('inline-flex items-center gap-px rounded-md border bg-sunken p-0.5', className)}
     >
       {options.map(({ value, label, icon: Icon }) => (
         <button
@@ -26,12 +26,12 @@ export function ThemeToggle({ className }) {
           title={label}
           onClick={() => setTheme(value)}
           className={cn(
-            'grid size-7 cursor-pointer place-items-center rounded-full text-muted-foreground transition-colors outline-none hover:text-foreground',
-            'focus-visible:ring-2 focus-visible:ring-ring',
-            theme === value && 'bg-card text-foreground shadow-xs dark:bg-secondary-hover',
+            'grid size-7 cursor-pointer place-items-center rounded-sm text-muted-foreground transition-colors duration-100 outline-none hover:text-foreground',
+            'focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring',
+            theme === value && 'bg-card text-foreground shadow-[0_0_0_1px_var(--border)]',
           )}
         >
-          <Icon aria-hidden="true" className="size-4" />
+          <Icon aria-hidden="true" className="size-3.5" />
         </button>
       ))}
     </div>

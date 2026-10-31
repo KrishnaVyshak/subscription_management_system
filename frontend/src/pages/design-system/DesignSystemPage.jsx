@@ -1,122 +1,151 @@
 import { Link } from 'react-router-dom';
-import { ArrowLeft, ArrowRight } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { Logo } from '@/components/brand/logo';
-import { LoopPattern } from '@/components/brand/loop-pattern';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { Button } from '@/components/ui/button';
 import { BrandSection } from './BrandSection';
 import { ComponentsSection } from './ComponentsSection';
+import { componentIndex } from './contents';
 import { FoundationsSection } from './FoundationsSection';
 import { PatternsSection } from './PatternsSection';
 
-const nav = [
-  { href: '#brand', label: 'Brand' },
-  { href: '#foundations', label: 'Foundations' },
-  { href: '#components', label: 'Components' },
-  { href: '#patterns', label: 'Patterns' },
+const contents = [
+  { href: '#brand', number: '00', label: 'Brand' },
+  { href: '#foundations', number: '01', label: 'Foundations' },
+  { href: '#components', number: '02', label: 'Components', children: componentIndex },
+  { href: '#patterns', number: '03', label: 'Patterns' },
 ];
 
-const facts = [
-  ['4', 'brand colours'],
-  ['20', 'components'],
-  ['2', 'themes, one brand'],
-  ['AA', 'contrast throughout'],
+const specs = [
+  ['Type', 'Archivo · JetBrains Mono'],
+  ['Colour', 'Stone, Ink, Cobalt'],
+  ['Shape', '3px corners, ruled edges'],
+  ['Themes', 'Light and dark, AA contrast'],
 ];
 
-function Hero() {
+function TopBar() {
   return (
-    <div className="relative isolate overflow-hidden rounded-3xl bg-ink-900 px-6 py-14 text-paper sm:px-14 sm:py-20 dark:ring-1 dark:ring-white/10">
-      <LoopPattern
-        rings={9}
-        spark
-        className="absolute top-1/2 -right-56 -z-10 size-176 -translate-y-1/2 text-white/8 max-sm:-right-80 max-sm:opacity-60"
-      />
-      <div className="absolute -right-24 -bottom-40 -z-10 size-112 rounded-full bg-tide-500/30 blur-3xl" />
-      <div className="absolute top-10 right-1/3 -z-10 size-40 rounded-full bg-volt-300/10 blur-3xl" />
-
-      <p className="flex items-center gap-2 type-overline text-volt-300">
-        <span aria-hidden="true" className="size-1.5 rounded-full bg-volt-300" />
-        Brightloop design system · v2
-      </p>
-      <h1 className="mt-6 max-w-3xl type-display">
-        Billing that <em className="text-volt-300">keeps its promises.</em>
-      </h1>
-      <p className="mt-6 max-w-xl text-base leading-relaxed text-white/65">
-        The visual language for Brightloop’s subscription, invoicing and finance tools: Ink and
-        Paper for calm, Tide for every action, and one bright spark of Volt where it matters.
-      </p>
-      <div className="mt-9 flex flex-wrap gap-3">
-        <Button as="a" href="#components" variant="accent" size="lg">
-          Explore components <ArrowRight />
-        </Button>
-        <Button
-          as="a"
-          href="#brand"
-          variant="ghost"
-          size="lg"
-          className="text-white ring-1 ring-white/20 hover:bg-white/10"
+    <header className="sticky top-0 z-20 border-b bg-card">
+      <div className="mx-auto flex h-14 max-w-[90rem] items-center gap-3 px-4 sm:px-8">
+        <Link
+          to="/design-system"
+          className="rounded-sm outline-none focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
         >
-          Brand guidelines
-        </Button>
+          <Logo />
+        </Link>
+        <span aria-hidden="true" className="hidden h-4 w-px bg-border sm:block" />
+        <span className="hidden type-label text-muted-foreground sm:inline">Design system</span>
+        <div className="ml-auto flex items-center gap-2">
+          <ThemeToggle />
+          <Button as={Link} to="/" variant="tertiary" size="sm" className="hidden sm:inline-flex">
+            <ArrowLeft /> Back to app
+          </Button>
+        </div>
       </div>
+      {/* Below lg the contents rail collapses into a scrollable strip under the bar. */}
+      <nav aria-label="Sections" className="border-t lg:hidden">
+        <ul className="mx-auto flex max-w-[90rem] gap-5 overflow-x-auto px-4 sm:px-8">
+          {contents.map(({ href, number, label }) => (
+            <li key={href} className="shrink-0">
+              <a
+                href={href}
+                className="flex h-10 items-center gap-1.5 text-[0.8125rem] text-muted-foreground outline-none hover:text-foreground focus-visible:text-foreground focus-visible:underline"
+              >
+                <span className="font-mono text-[0.6875rem] text-subtle-foreground">{number}</span>
+                {label}
+              </a>
+            </li>
+          ))}
+        </ul>
+      </nav>
+    </header>
+  );
+}
 
-      <dl className="mt-14 grid max-w-2xl grid-cols-2 gap-y-6 border-t border-white/10 pt-8 sm:grid-cols-4">
-        {facts.map(([value, label]) => (
-          <div key={label}>
-            <dt className="sr-only">{label}</dt>
-            <dd>
-              <span className="block font-serif text-4xl leading-none font-light">{value}</span>
-              <span className="mt-1.5 block text-xs text-white/55">{label}</span>
-            </dd>
-          </div>
+function Contents() {
+  const link =
+    'block rounded-sm py-1 text-[0.8125rem] text-muted-foreground outline-none transition-colors duration-100 hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring';
+  return (
+    <nav
+      aria-label="Contents"
+      className="sticky top-14 hidden max-h-[calc(100vh-3.5rem)] overflow-y-auto py-10 lg:block"
+    >
+      <p className="type-label text-subtle-foreground">Contents</p>
+      <ol className="mt-4 space-y-3">
+        {contents.map(({ href, number, label, children }) => (
+          <li key={href}>
+            <a href={href} className={`${link} flex gap-2.5 font-medium text-foreground`}>
+              <span className="font-mono text-[0.6875rem] leading-5 text-subtle-foreground">
+                {number}
+              </span>
+              {label}
+            </a>
+            {children && (
+              <ul className="mt-1 ml-[0.4rem] border-l pl-[1.15rem]">
+                {children.map((c) => (
+                  <li key={c.id}>
+                    <a href={`#${c.id}`} className={link}>
+                      {c.label}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </li>
         ))}
-      </dl>
-    </div>
+      </ol>
+    </nav>
+  );
+}
+
+function Masthead() {
+  return (
+    <header className="pt-10 pb-16 sm:pt-16 sm:pb-20">
+      <p className="type-label text-muted-foreground">Brightloop · Ledger design system · v3</p>
+      <h1 className="mt-6 max-w-4xl type-display">
+        Billing, kept <span className="text-accent">in order.</span>
+      </h1>
+      <div className="mt-10 grid gap-10 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
+        <p className="max-w-xl text-base leading-relaxed text-muted-foreground">
+          The visual language for Brightloop’s subscription, invoicing and finance tools. It borrows
+          from the printed statement: sheets on a stone desk, figures in a typewriter face, and
+          rules instead of boxes. One colour, Cobalt, is reserved for where your attention should go
+          next.
+        </p>
+        <dl className="divide-y border-y border-t-rule text-[0.8125rem]">
+          {specs.map(([term, value]) => (
+            <div key={term} className="grid grid-cols-[6rem_1fr] gap-4 py-2.5">
+              <dt className="type-label leading-5 text-muted-foreground">{term}</dt>
+              <dd>{value}</dd>
+            </div>
+          ))}
+        </dl>
+      </div>
+    </header>
   );
 }
 
 export default function DesignSystemPage() {
   return (
     <div className="min-h-screen">
-      <header className="sticky top-0 z-20 border-b bg-background/80 backdrop-blur-md">
-        <div className="mx-auto flex h-16 max-w-7xl items-center gap-6 px-4 sm:px-8">
-          <Link
-            to="/design-system"
-            className="rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          >
+      <TopBar />
+      <div className="mx-auto grid max-w-[90rem] grid-cols-[minmax(0,1fr)] gap-x-14 px-4 sm:px-8 lg:grid-cols-[11rem_minmax(0,1fr)]">
+        <Contents />
+        <main className="min-w-0">
+          <Masthead />
+          <BrandSection />
+          <FoundationsSection />
+          <ComponentsSection />
+          <PatternsSection />
+          <footer className="mt-24 flex flex-wrap items-center justify-between gap-4 border-t-2 border-rule py-6 type-caption text-muted-foreground">
             <Logo />
-          </Link>
-          <nav aria-label="Sections" className="hidden items-center gap-1 md:flex">
-            {nav.map(({ href, label }) => (
-              <a
-                key={href}
-                href={href}
-                className="rounded-full px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-              >
-                {label}
-              </a>
-            ))}
-          </nav>
-          <div className="ml-auto flex items-center gap-2">
-            <ThemeToggle />
-            <Button as={Link} to="/" variant="ghost" size="sm" className="hidden sm:inline-flex">
-              <ArrowLeft /> Back to app
-            </Button>
-          </div>
-        </div>
-      </header>
-
-      <main className="mx-auto max-w-7xl space-y-24 px-4 py-8 sm:px-8 sm:py-10">
-        <Hero />
-        <BrandSection />
-        <FoundationsSection />
-        <ComponentsSection />
-        <PatternsSection />
-        <footer className="flex flex-wrap items-center justify-between gap-4 border-t py-10 text-sm text-muted-foreground">
-          <Logo />
-          <p>Tokens in src/index.css · Components in src/components/ui</p>
-        </footer>
-      </main>
+            <p>
+              Tokens in <code className="font-mono">src/index.css</code> · Components in{' '}
+              <code className="font-mono">src/components/ui</code>
+            </p>
+          </footer>
+        </main>
+      </div>
     </div>
   );
 }

@@ -21,15 +21,17 @@ export function Tabs({ value, defaultValue, onValueChange, className, children }
 }
 
 const listVariants = {
-  segmented: 'inline-flex items-center gap-0.5 rounded-full bg-muted p-1',
-  underline: 'flex items-center gap-6 border-b',
+  // A sunken well; the selected option is a raised sheet inside it.
+  segmented: 'inline-flex items-center gap-px rounded-md border bg-sunken p-0.5',
+  // Page sections: a 2px Ink rule under the current tab, sitting on the hairline.
+  underline: 'flex items-center gap-5 overflow-x-auto border-b',
 };
 
 const triggerVariants = {
   segmented:
-    'h-8 rounded-full px-3.5 aria-selected:bg-card aria-selected:text-foreground aria-selected:shadow-xs dark:aria-selected:bg-secondary-hover',
+    'h-7 rounded-sm px-2.5 text-xs aria-selected:bg-card aria-selected:text-foreground aria-selected:shadow-[0_0_0_1px_var(--border)]',
   underline:
-    '-mb-px h-11 border-b-2 border-transparent aria-selected:border-foreground aria-selected:text-foreground',
+    '-mb-px h-10 border-b-2 border-transparent text-[0.8125rem] aria-selected:border-rule aria-selected:text-foreground',
 };
 
 /** variant: segmented (filters, view switches) | underline (page sections) */
@@ -71,9 +73,9 @@ export function TabsTrigger({ value, className, children, ...props }) {
       tabIndex={selected ? 0 : -1}
       onClick={() => select(value)}
       className={cn(
-        'inline-flex cursor-pointer items-center gap-1.5 text-sm font-medium whitespace-nowrap text-muted-foreground transition-colors outline-none hover:text-foreground',
-        'focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
-        'disabled:pointer-events-none disabled:opacity-50 [&_svg]:size-4',
+        'inline-flex shrink-0 cursor-pointer items-center gap-1.5 font-medium whitespace-nowrap text-muted-foreground transition-colors duration-100 outline-none hover:text-foreground',
+        'focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring',
+        'disabled:pointer-events-none disabled:opacity-40 [&_svg]:size-3.5',
         triggerVariants[variant],
         className,
       )}
