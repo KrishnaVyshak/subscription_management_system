@@ -32,3 +32,13 @@ Where `docs/BACKEND_SPEC.md` is silent or does not match this repo, this file re
 ## Testing
 - Integration tests run against `TEST_DATABASE_URL` when it is set. When it is unset, they run against a throwaway **embedded Postgres** (`embedded-postgres`) started by vitest's global setup, so `npm test` needs no Docker or cloud DB. The public schema is rebuilt from `supabase/migrations` on every run, and tables are truncated before each test.
 - Supabase Auth admin is mocked globally (`src/tests/helpers/fakeSupabase.js`). JWTs are HS256-signed with a test secret.
+
+## Catalog (phase 2)
+- Percent taxes store the percentage (`18` = 18 %, max 100). Fixed taxes store an amount per unit.
+- Rates are `numeric(12,4)`. Money is `numeric(12,2)` and accepted as a string or a number with at most 2 decimals.
+- A variant is one value per attribute. Its name is `"<product> (<values sorted by attribute name>)"`. A `signature` column (sorted value ids) makes a duplicate combination for the same product a 409.
+- Catalog `DELETE` routes are soft deletes (`is_active = false`). Lists hide inactive rows unless `includeInactive=true`.
+- `GET /plans?available=true` means active and today (IST) is within `available_from..available_to` (both optional).
+- Plan edits never affect existing subscriptions. A subscription copies the plan's price (on its plan line), `billing_period` and `interval_count` when it is created. Plan **flags** (closable, pausable, renewable, auto_close) are read live from the plan, because they are policy, not price.
+- Settings are returned as `[{ key, value }]` and updated with `PUT /settings/:key { value }`. Only `company` and `invoice.auto_confirm` are accepted.
+- Quantities are whole numbers.
