@@ -2,6 +2,8 @@
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 
+The React frontend lives in `frontend/`. Run the commands below from that directory (for example, `cd frontend` first).
+
 ## Available Scripts
 
 In the project directory, you can run:
