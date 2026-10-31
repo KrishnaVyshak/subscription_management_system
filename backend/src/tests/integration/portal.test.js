@@ -44,7 +44,7 @@ describeDb('portal and RBAC', () => {
   const as = (who, method, path) => request(app)[method](`/api/${path}`).set('Authorization', who.auth);
 
   it('customers reach /portal only; staff cannot use the portal', async () => {
-    for (const path of ['subscriptions', 'customers', 'invoices', 'payments', 'products', 'receivables/summary']) {
+    for (const path of ['subscriptions', 'customers', 'invoices', 'payments', 'products', 'receivables/summary', 'reports/summary']) {
       expect((await as(alice, 'get', path)).status).toBe(403);
     }
     await as(alice, 'post', 'billing/run').send({}).expect(403);

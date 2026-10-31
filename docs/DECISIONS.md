@@ -124,3 +124,20 @@ Where `docs/BACKEND_SPEC.md` is silent or does not match this repo, this file re
   - `addons { add: [{ productId, variantId?, quantity }], remove: [lineId] }`: add-on products only, effective next period.
 - `allowedActions` in the portal is `pause | resume | cancel | renew | addons`.
 - `PATCH /portal/profile` can change `fullName` (login profile) plus the customer's `name`, `phone`, `billingAddress` and `gstin`. The email is the login, so it is ignored.
+
+## Reports and jobs (phase 9)
+- **MRR**: for each `active` subscription, Σ(quantity × unit_price) of the lines in effect today × the monthly factor (yearly 1/12, weekly 52/12, daily 365/12, divided by `interval_count`). This is pre-discount and pre-tax. Paused subscriptions count 0. **ARR** = 12 × unrounded MRR, rounded once.
+- Report filters `planId` and `customerId` apply to every figure. `from`/`to` (default: 1st of this month → today, IST) apply only to flow figures:
+  - **invoiced**: totals of confirmed and paid invoices by invoice date.
+  - **collected**: payments by payment date.
+  - **new**: subscriptions that were ever activated, with `start_date` in the range.
+  - **churned**: activated subscriptions closed in the range, for any reason.
+  Stock figures (active, paused, MRR, ARR, outstanding, overdue) are as of today.
+- `revenue-trend?months=N` (1–60) returns N calendar months ending with the current one, with zero rows for empty months.
+- `by-plan` lists plans that have subscriptions or invoices in the range. `top-customers` ranks by invoiced in the range (default limit 10).
+- **Daily jobs** run at 00:05 IST in the spec's order, only when `JOBS_ENABLED` and not in tests. Each subscription is handled in its own transaction and re-checked under `FOR UPDATE`, so the jobs are idempotent and safe alongside the API.
+  - Jobs act as the system: `changed_by` is null. They bypass the closable check, which only matters for early closes.
+  - Auto-close closes `active` or `paused` subscriptions whose `expiry_date < today` and whose plan has `auto_close`, with reason `expired`.
+  - Discounts past `end_date` or at `usage_limit` get `is_active = false`.
+  - If billing is already running, the job records a skip instead of failing.
+- `POST /api/jobs/:name/run` (admin) takes `daily` or one of `expire-quotations`, `activate-subscriptions`, `run-billing`, `auto-close`, `deactivate-discounts`, plus an optional `asOfDate`. A future `asOfDate` needs `DEMO_MODE`.
