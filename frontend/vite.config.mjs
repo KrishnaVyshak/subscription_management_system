@@ -15,6 +15,8 @@ export default defineConfig({
   },
   server: {
     port: 5173,
+    // Lets Cloudflare quick tunnels (`cloudflared tunnel --url`) reach the dev server.
+    allowedHosts: ['.trycloudflare.com'],
     proxy: {
       '/api': 'http://localhost:4000',
     },

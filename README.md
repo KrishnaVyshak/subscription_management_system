@@ -42,3 +42,24 @@ supabase/   config.toml, SQL migrations, seed.sql
 | `npm run seed`       | Pushes migrations and `supabase/seed.sql`                  |
 
 `GET /api/health` returns DB status and the server time in IST; the frontend home page shows it.
+
+## Design system
+
+Run `npm run dev` and open `/design-system` for the live reference (brand, foundations,
+components and a dashboard pattern, in light and dark).
+
+- **Brand**: Ink (text, navigation rail), Paper (surfaces), Tide (every action: buttons, links,
+  focus, selection, in both themes) and Volt (the highlight, at most once per view, never text).
+  Logo and loop motif live in `frontend/src/components/brand`.
+- **Type**: Spectral for headlines and figures, Geist for UI, Geist Mono for IDs and
+  overlines. Spectral has one weight per role, lighter as it gets larger: 200 numerals, 300
+  display, 400 titles and statements, 500 figures. Utilities: `type-display`, `type-h1`–`type-h3`,
+  `type-statement`, `type-figure`, `type-numeral`, `type-body`, `type-caption`, `type-overline`.
+- **Tokens** are in `frontend/src/index.css` (Tailwind v4 `@theme`). Use semantic utilities
+  (`bg-card`, `text-muted-foreground`, `bg-primary`, `bg-highlight`, `bg-success-soft`…)
+  rather than raw scales, so both themes keep working.
+- **Components** are in `frontend/src/components/ui` (shadcn-style, one per file). Buttons are
+  pills with a loop-ripple press animation (skipped under reduced motion). Merge classes with
+  `cn()` from `@/lib/utils`.
+- **Status colours** map one-to-one to subscription and invoice states in `StatusBadge`.
+  Charts use `--chart-1…3` (Tide, Ember, Cobalt) in that fixed order; never Volt or status colours.

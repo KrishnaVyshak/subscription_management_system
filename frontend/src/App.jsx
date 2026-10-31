@@ -1,6 +1,25 @@
-import { Route, Routes } from 'react-router-dom';
+import { lazy, Suspense } from 'react';
+import { Link, Route, Routes } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+import { Palette } from 'lucide-react';
 import { api } from './api/client';
+import { Logo } from '@/components/brand/logo';
+import { Alert } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Spinner } from '@/components/ui/spinner';
+
+// Showcase pulls in Recharts; keep it out of the main bundle.
+const DesignSystemPage = lazy(() => import('./pages/design-system/DesignSystemPage'));
 
 function useHealth() {
   return useQuery({
@@ -16,40 +35,76 @@ function HealthPage() {
   const dbUp = data?.db === 'up';
 
   return (
-    <main className="min-h-screen bg-slate-50 px-4 py-16 text-slate-900">
-      <div className="mx-auto max-w-md rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-        <h1 className="text-xl font-semibold">Brightloop Subscriptions</h1>
-        <p className="mt-1 text-sm text-slate-500">System status</p>
+    <main className="px-4 py-16">
+      <Logo className="mx-auto mb-8 flex w-fit" />
+      <Card className="mx-auto max-w-md">
+        <CardHeader>
+          <CardTitle className="type-h2">Brightloop Subscriptions</CardTitle>
+          <CardDescription>System status</CardDescription>
+        </CardHeader>
 
-        {isPending && <p className="mt-6 text-sm">Checking API…</p>}
+        <CardContent>
+          {isPending && (
+            <div className="space-y-3" aria-label="Checking API">
+              <Skeleton className="h-4 w-1/2" />
+              <Skeleton className="h-4 w-2/3" />
+              <Skeleton className="h-4 w-3/5" />
+            </div>
+          )}
 
-        {isError && (
-          <p className="mt-6 text-sm text-red-600">API unreachable: {error.message}</p>
-        )}
+          {isError && (
+            <Alert tone="danger" title="API unreachable">
+              {error.message}
+            </Alert>
+          )}
 
-        {data && (
-          <dl className="mt-6 grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 text-sm">
-            <dt className="text-slate-500">API</dt>
-            <dd className="font-medium text-emerald-600">up</dd>
-            <dt className="text-slate-500">Database</dt>
-            <dd className={dbUp ? 'font-medium text-emerald-600' : 'font-medium text-red-600'}>
-              {dbUp ? 'up' : `down${data.dbError ? ` (${data.dbError})` : ''}`}
-            </dd>
-            <dt className="text-slate-500">Server time (IST)</dt>
-            <dd className="font-mono">{data.serverTime}</dd>
-            <dt className="text-slate-500">Business date</dt>
-            <dd className="font-mono">{data.today}</dd>
-          </dl>
-        )}
-      </div>
+          {data && (
+            <dl className="grid grid-cols-[auto_1fr] items-center gap-x-6 gap-y-3 text-sm">
+              <dt className="text-muted-foreground">API</dt>
+              <dd>
+                <Badge tone="success" dot>
+                  up
+                </Badge>
+              </dd>
+              <dt className="text-muted-foreground">Database</dt>
+              <dd>
+                <Badge tone={dbUp ? 'success' : 'danger'} dot>
+                  {dbUp ? 'up' : `down${data.dbError ? ` (${data.dbError})` : ''}`}
+                </Badge>
+              </dd>
+              <dt className="text-muted-foreground">Server time (IST)</dt>
+              <dd className="font-mono text-xs">{data.serverTime}</dd>
+              <dt className="text-muted-foreground">Business date</dt>
+              <dd className="font-mono text-xs">{data.today}</dd>
+            </dl>
+          )}
+        </CardContent>
+
+        <CardFooter>
+          <Button as={Link} to="/design-system" variant="link" size="sm">
+            <Palette /> View the design system
+          </Button>
+        </CardFooter>
+      </Card>
     </main>
+  );
+}
+
+function PageFallback() {
+  return (
+    <div className="grid min-h-screen place-items-center text-muted-foreground">
+      <Spinner className="size-6" />
+    </div>
   );
 }
 
 export default function App() {
   return (
-    <Routes>
-      <Route path="/" element={<HealthPage />} />
-    </Routes>
+    <Suspense fallback={<PageFallback />}>
+      <Routes>
+        <Route path="/" element={<HealthPage />} />
+        <Route path="/design-system" element={<DesignSystemPage />} />
+      </Routes>
+    </Suspense>
   );
 }
