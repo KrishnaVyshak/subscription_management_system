@@ -16,8 +16,9 @@ supabase/   config.toml, SQL migrations, seed.sql
 
 1. Node 20+ and npm. From the repo root: `npm install`.
 2. `cp .env.example .env` and fill in the values from your Supabase project
-   (Project Settings → Database for `DATABASE_URL`, Project Settings → API for the keys and
-   `SUPABASE_JWT_SECRET`). Set `ADMIN_EMAIL` / `ADMIN_PASSWORD` for the first admin.
+   (Project Settings → Database for `DATABASE_URL`, Project Settings → API for the URL and keys).
+   `SUPABASE_JWT_SECRET` is only needed for legacy HS256 signing; asymmetric signing keys are
+   verified through `SUPABASE_URL` automatically. Set `ADMIN_EMAIL` / `ADMIN_PASSWORD` for the first admin.
    Both apps read this single root `.env`; only `VITE_*` variables reach the browser.
 3. Apply the migrations, create the admin, load demo data and start:
    ```

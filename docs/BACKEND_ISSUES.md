@@ -3,18 +3,12 @@
 The frontend does not change `/backend` (except the static path / CORS, if needed). Each issue
 below lists how the frontend works around it.
 
-## 1. Every real login gets 401: HS256 secret vs ES256 tokens (blocker)
+## 1. Real login gets 401: HS256 secret vs asymmetric tokens (fixed)
 
-- `middleware/auth.js#verify` uses `SUPABASE_JWT_SECRET` (HS256 only) whenever it is set, and only
-  falls back to JWKS when it is not.
-- The Supabase project signs access tokens with **ES256** (asymmetric signing keys). With
-  `SUPABASE_JWT_SECRET` set in `.env`, every token from `signInWithPassword` fails verification:
-  `401 "Invalid or expired token"`.
-- **Proof**: a seed staff token is rejected by the server on :4000. The same token is accepted by a
-  second instance started with the variable blank (`SUPABASE_JWT_SECRET= PORT=4100 node
-  backend/src/index.js`; `env.js` treats empty strings as unset), which then verifies via JWKS.
-- **Fix options** (backend owner): remove `SUPABASE_JWT_SECRET` from `.env`, **or** make `verify`
-  choose by the token header's `alg` (HS256 → secret, otherwise JWKS).
+- `middleware/auth.js#verify` now selects verification by the JWT header's algorithm: HS256 uses
+  `SUPABASE_JWT_SECRET`; asymmetric tokens use the project's JWKS at `SUPABASE_URL`.
+- This allows `SUPABASE_JWT_SECRET` to remain set for legacy tokens without rejecting tokens signed
+  with the project's asymmetric key.
 - Frontend: nothing to do; it sends the Supabase access token as `Bearer`.
 
 ## 2. `/api/auth/*` rate limit also covers `GET /auth/me`

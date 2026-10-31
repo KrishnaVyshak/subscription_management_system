@@ -58,7 +58,9 @@ export function formatDateTime(value) {
 
 /** "2026-09" → "Sep 2026" (chart axes). */
 export function formatMonth(value, pattern = 'MMM yy') {
-  return format(parseISO(`${value}-01`), pattern);
+  if (typeof value !== 'string' || !/^\d{4}-(0[1-9]|1[0-2])$/.test(value)) return '—';
+  const date = parseISO(`${value}-01`);
+  return Number.isNaN(date.getTime()) ? '—' : format(date, pattern);
 }
 
 export const STATUS_LABELS = {

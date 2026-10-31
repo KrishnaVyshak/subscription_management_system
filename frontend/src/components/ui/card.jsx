@@ -35,7 +35,7 @@ export function CardContent({ className, ...props }) {
 export function CardFooter({ className, ...props }) {
   return (
     <footer
-      className={cn('flex items-center gap-2 border-t bg-sunken/50 px-4 py-3 sm:px-5', className)}
+      className={cn('flex items-center gap-2 bg-sunken/50 px-4 py-3 sm:px-5', className)}
       {...props}
     />
   );

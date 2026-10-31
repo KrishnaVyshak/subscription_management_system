@@ -29,12 +29,15 @@ export function createApp() {
     '/api/auth',
     rateLimit({
       windowMs: 15 * 60 * 1000,
-      limit: 20,
+      // Dev: generous limit so HMR reloads and React StrictMode double-invocations don't
+      // burn through the quota. Test: skip entirely. Prod: tight.
+      limit: isProd ? 20 : 200,
       standardHeaders: true,
       legacyHeaders: false,
       skip: () => env.NODE_ENV === 'test',
     }),
   );
+
 
   app.use('/api', apiRouter());
 

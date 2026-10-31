@@ -51,7 +51,7 @@ export default function DashboardPage() {
           empty={trend.data && !trend.data.some((m) => Number(m.invoiced)) ? 'No invoices in this period' : null}
           table={
             <SimpleTable label="Revenue by month" rows={trend.data} getRowId={(r) => r.month} columns={[
-              { id: 'm', header: 'Month', cell: (r) => formatMonth(`${r.month}-01`) },
+              { id: 'm', header: 'Month', cell: (r) => formatMonth(r.month) },
               { id: 'i', header: 'Invoiced', numeric: true, cell: (r) => <MoneyCell value={r.invoiced} /> },
               { id: 'c', header: 'Collected', numeric: true, cell: (r) => <MoneyCell value={r.collected} /> },
             ]} />
@@ -60,9 +60,9 @@ export default function DashboardPage() {
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={(trend.data ?? []).map((r) => ({ ...r, invoiced: Number(r.invoiced), collected: Number(r.collected) }))}>
               <CartesianGrid vertical={false} stroke="var(--chart-grid)" />
-              <XAxis dataKey="month" tickFormatter={(m) => formatMonth(`${m}-01`)} {...axisProps} />
+              <XAxis dataKey="month" tickFormatter={(m) => formatMonth(m)} {...axisProps} />
               <YAxis tickFormatter={moneyTick} width={52} {...axisProps} />
-              <Tooltip content={<ChartTooltip labelFormatter={(m) => formatMonth(`${m}-01`, 'MMMM yyyy')} />} cursor={{ fill: 'var(--sunken)' }} />
+              <Tooltip content={<ChartTooltip labelFormatter={(m) => formatMonth(m, 'MMMM yyyy')} />} cursor={{ fill: 'var(--sunken)' }} />
               <Bar dataKey="invoiced" name="Invoiced" fill={CHART_COLORS[0]} radius={[2, 2, 0, 0]} />
               <Bar dataKey="collected" name="Collected" fill={CHART_COLORS[1]} radius={[2, 2, 0, 0]} />
             </BarChart>

@@ -111,7 +111,7 @@ export function AppLayout() {
   }, [pathname]);
 
   return (
-    <div className="flex min-h-screen">
+    <div className="flex h-screen overflow-hidden">
       <a
         href="#main"
         className="sr-only z-50 rounded-md bg-primary px-3 py-2 text-primary-foreground focus:not-sr-only focus:fixed focus:top-2 focus:left-2"
@@ -136,7 +136,7 @@ export function AppLayout() {
 
       <MobileDrawer open={drawer} onClose={() => setDrawer(false)} role={role} user={user} />
 
-      <div className="flex min-w-0 flex-1 flex-col">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col">
         <header className="sticky top-0 z-20 flex h-12 items-center gap-2 border-b bg-card px-3 sm:gap-3 sm:px-4">
           <Button
             variant="tertiary"
@@ -166,7 +166,7 @@ export function AppLayout() {
           </div>
         </header>
 
-        <main id="main" ref={mainRef} tabIndex={-1} className="@container w-full flex-1 p-3 outline-none sm:p-5 lg:p-6">
+        <main id="main" ref={mainRef} tabIndex={-1} className="@container min-h-0 w-full flex-1 overflow-y-auto p-3 outline-none sm:p-5 lg:p-6">
           <div className="mx-auto max-w-[90rem]">
             <Suspense fallback={<PageSkeleton />}>
               <Outlet />

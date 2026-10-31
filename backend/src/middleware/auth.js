@@ -1,18 +1,21 @@
-import { createRemoteJWKSet, jwtVerify } from 'jose';
+import { createRemoteJWKSet, decodeProtectedHeader, jwtVerify } from 'jose';
 import { env } from '../config/env.js';
 import { query } from '../config/db.js';
 import { ForbiddenError, UnauthorizedError } from '../lib/errors.js';
 
 let jwks;
 
-// HS256 with SUPABASE_JWT_SECRET when set, otherwise the project's JWKS (asymmetric keys).
 function verify(token) {
-  if (env.SUPABASE_JWT_SECRET) {
+  const { alg } = decodeProtectedHeader(token);
+  // Supabase projects using the legacy JWT secret issue HS256 tokens. Newer projects
+  // use asymmetric signing keys, so verify those against the project's published JWKS.
+  if (alg === 'HS256') {
+    if (!env.SUPABASE_JWT_SECRET) throw new Error('SUPABASE_JWT_SECRET is not set for HS256 token');
     return jwtVerify(token, new TextEncoder().encode(env.SUPABASE_JWT_SECRET), {
       algorithms: ['HS256'],
     });
   }
-  if (!env.SUPABASE_URL) throw new Error('Neither SUPABASE_JWT_SECRET nor SUPABASE_URL is set');
+  if (!env.SUPABASE_URL) throw new Error('SUPABASE_URL is not set for asymmetric token');
   jwks ??= createRemoteJWKSet(new URL(`${env.SUPABASE_URL}/auth/v1/.well-known/jwks.json`));
   return jwtVerify(token, jwks);
 }
