@@ -14,6 +14,7 @@ import customersRoutes from './modules/customers/routes.js';
 import subscriptionsRoutes from './modules/subscriptions/routes.js';
 import invoicesRoutes from './modules/invoices/routes.js';
 import billingRoutes from './modules/billing/routes.js';
+import discountsRoutes from './modules/discounts/routes.js';
 
 // Every router except health and auth (which guards its own routes) sits behind authenticate.
 // Each module applies its own role checks.
@@ -43,6 +44,7 @@ export function apiRouter() {
     '/payment-terms': paymentTermsRoutes,
     '/settings': settingsRoutes,
     '/templates': templatesRoutes,
+    '/discounts': discountsRoutes,
   };
   for (const [prefix, router] of Object.entries(catalog)) {
     api.use(prefix, authenticate, catalogAccess, router);

@@ -1,7 +1,18 @@
 import { sendData, sendList } from '../../lib/http.js';
 import { invoiceNextPeriod } from '../billing/service.js';
 import { getDetail as getInvoice } from '../invoices/service.js';
+import * as discounts from '../discounts/service.js';
 import * as service from './service.js';
+
+export async function attachDiscount(req, res) {
+  await discounts.attach(req.params.id, req.body.discountId, req.user.id);
+  sendData(res, await service.getDetail(req.params.id, req.user), 201);
+}
+
+export async function detachDiscount(req, res) {
+  await discounts.detach(req.params.id, req.params.discountId);
+  sendData(res, await service.getDetail(req.params.id, req.user));
+}
 
 export async function invoiceNow(req, res) {
   const invoiceId = await invoiceNextPeriod(req.params.id, req.user.id);

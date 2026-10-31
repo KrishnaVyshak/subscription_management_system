@@ -2,6 +2,7 @@ import { query, withTransaction } from '../../config/db.js';
 import { todayIST } from '../../lib/dates.js';
 import { BusinessRuleError, NotFoundError } from '../../lib/errors.js';
 import { releaseInvoiceUsages } from '../discounts/engine.js';
+import { usagesForInvoice } from '../discounts/service.js';
 import * as repo from './repo.js';
 
 const db = { query };
@@ -16,8 +17,8 @@ export function listAll(filters, today = todayIST()) {
 }
 
 // Payments and applied discounts of an invoice.
-export async function extrasFor() {
-  return { payments: [], discounts: [] };
+export async function extrasFor(client, invoiceId) {
+  return { payments: [], discounts: await usagesForInvoice(client, invoiceId) };
 }
 
 // `customerId` scopes the lookup for the portal (other customers' invoices are 404).

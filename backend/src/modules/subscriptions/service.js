@@ -8,6 +8,7 @@ import { BusinessRuleError, NotFoundError, ValidationError } from '../../lib/err
 import { fmt } from '../../lib/money.js';
 import { resolveLines } from '../catalog/lineResolver.js';
 import { getTemplate } from '../templates/service.js';
+import { attachedTo } from '../discounts/service.js';
 import * as repo from './repo.js';
 import { previewNextInvoice, recentInvoices } from './preview.js';
 
@@ -68,9 +69,7 @@ export async function getDetail(id, { role = 'admin', customerId } = {}, today =
 }
 
 // Subscription-scope discounts attached to this subscription.
-async function attachedDiscounts() {
-  return [];
-}
+const attachedDiscounts = (client, subscriptionId) => attachedTo(client, subscriptionId);
 
 // ---------- create ----------
 

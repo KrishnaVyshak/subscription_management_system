@@ -37,6 +37,8 @@ async function startEmbedded(port) {
     password: 'postgres',
     port,
     persistent: false,
+    // Windows defaults to WIN1252; Supabase is UTF-8.
+    initdbFlags: ['--encoding=UTF8', '--locale=C'],
     onLog: () => {},
   });
   await embedded.initialise();

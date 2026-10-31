@@ -5,6 +5,7 @@ import { requireRole } from '../../middleware/auth.js';
 import { validate } from '../../middleware/validate.js';
 import * as c from './controller.js';
 import * as s from './schemas.js';
+import { attachSchema, detachParams } from '../discounts/schemas.js';
 
 const router = Router();
 
@@ -20,5 +21,18 @@ router.post(
 );
 router.post('/:id/renew', validate({ params: idParams }), h(c.renew));
 router.post('/:id/invoices', validate({ params: idParams }), h(c.invoiceNow));
+// Discounts are admin-only rules, so attaching them is too.
+router.post(
+  '/:id/discounts',
+  requireRole('admin'),
+  validate({ params: idParams, body: attachSchema }),
+  h(c.attachDiscount),
+);
+router.delete(
+  '/:id/discounts/:discountId',
+  requireRole('admin'),
+  validate({ params: detachParams }),
+  h(c.detachDiscount),
+);
 
 export default router;

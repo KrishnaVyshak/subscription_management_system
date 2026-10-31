@@ -80,3 +80,19 @@ Where `docs/BACKEND_SPEC.md` is silent or does not match this repo, this file re
 - `POST /subscriptions/:id/invoices` bills exactly one period, the next unbilled one, whatever its date. It returns 422 `NOT_ACTIVE` / `PAST_EXPIRY`, or 409 if that period is already invoiced or locked.
 - **Cancel**: only `draft` or `confirmed` invoices with `amount_paid = 0` (`INVOICE_HAS_PAYMENTS`). Cancelling releases discount usages but does **not** rewind the subscription, so a cancelled period stays unbilled unless an admin re-bills it by hand.
 - `POST /billing/run` defaults `asOfDate` to today (IST). A future date needs `DEMO_MODE`, otherwise 422 `FUTURE_DATE_NOT_ALLOWED`. Past dates are allowed, for catch-up and seeding.
+
+## Discounts (phase 5)
+- **Stacking**: never. Each line gets at most one product discount, the largest by amount on that line (ties go to the lower id). The invoice gets at most one subscription discount, the largest by amount on the invoice net after line discounts. Neither ever exceeds its base, so no line goes negative.
+- Product scope applies automatically to lines with a listed product. `min_quantity` and `min_amount` are checked against that line's quantity and subtotal.
+- Subscription scope applies only while attached to the subscription. `min_quantity` is checked against the invoice's total quantity, and `min_amount` against the invoice net after line discounts.
+- Eligibility uses the **invoice date** (= period start), so a discount that has expired today still applies to a back-dated catch-up period inside its window.
+- **Usage counting**: one use per discount per invoice, however many lines it touched (`UNIQUE (discount_id, invoice_id)`).
+  - Claiming is an atomic `UPDATE … usage_count + 1 WHERE … usage_count < usage_limit RETURNING`, done in discount-id order to avoid deadlocks.
+  - A failed claim drops that discount and recomputes the pick.
+  - Claims for an invoice that hits the duplicate-period conflict are released.
+  - Cancelling an invoice deletes its usages and decrements `usage_count`.
+- A discount that would take 0 off is not picked and not counted.
+- `state` is one of `exhausted` (limit reached), `expired` (end date past), `inactive` (switched off by hand), `scheduled` (start in the future) or `active`, checked in that order.
+- Once `usage_count > 0`, `type`, `value` and `scope` are locked (`DISCOUNT_IN_USE`). Name, window, limits and products stay editable. `usageLimit` can't go below `usage_count`.
+- Attaching or detaching subscription discounts (`POST/DELETE /subscriptions/:id/discounts[/:discountId]`) is **admin only**, because discounts are admin-only rules. Only `subscription`-scope discounts can be attached (`DISCOUNT_SCOPE`), and not to closed subscriptions.
+- The integration-test Postgres is initialised as UTF-8, matching Supabase.
