@@ -1,4 +1,5 @@
 import { Children, cloneElement, useId } from 'react';
+import { CircleAlert } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Label } from './label';
 
@@ -29,8 +30,12 @@ export function Field({ label, hint, error, required, className, children }) {
       {message && (
         <p
           id={messageId}
-          className={cn('text-xs', error ? 'text-danger' : 'text-muted-foreground')}
+          className={cn(
+            'flex items-start gap-1.5 type-caption',
+            error ? 'text-danger-soft-foreground' : 'text-muted-foreground',
+          )}
         >
+          {error && <CircleAlert aria-hidden="true" className="mt-px size-3.5 shrink-0" />}
           {message}
         </p>
       )}

@@ -1,106 +1,45 @@
-import { useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { Spinner } from './spinner';
 
+// Rectangular, tight and quiet: hierarchy comes from fill, not from size or colour.
+// Press squeezes the control in from both sides (no vertical shift); focus is a Cobalt outline.
 const base =
-  'relative isolate inline-flex shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-full font-medium whitespace-nowrap ' +
-  'transition-[color,background-color,border-color,box-shadow,filter] duration-300 ease-glide select-none outline-none ' +
-  'active:shadow-press active:brightness-[0.96] active:duration-75 ' +
-  'focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background ' +
-  'disabled:pointer-events-none disabled:opacity-45 aria-disabled:pointer-events-none aria-disabled:opacity-45 ' +
-  '[&_svg]:pointer-events-none [&_svg]:shrink-0';
+  'relative inline-flex shrink-0 cursor-pointer items-center justify-center rounded-md font-medium whitespace-nowrap select-none ' +
+  'transition-[color,background-color,border-color,box-shadow,scale] duration-100 ease-out outline-none ' +
+  'origin-center active:scale-x-[0.94] ' +
+  'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring ' +
+  'disabled:pointer-events-none disabled:opacity-40 aria-disabled:pointer-events-none aria-disabled:opacity-40 ' +
+  'aria-busy:cursor-progress [&_svg]:pointer-events-none [&_svg]:shrink-0';
 
 const sizes = {
-  sm: 'h-8 gap-1.5 px-3.5 text-xs [&_svg]:size-3.5',
-  md: 'h-10 gap-2 px-5 text-sm [&_svg]:size-4',
-  lg: 'h-12 gap-2.5 px-6 text-[0.9375rem] [&_svg]:size-[1.125rem]',
-  icon: 'size-10 [&_svg]:size-4',
-  'icon-sm': 'size-8 [&_svg]:size-3.5',
+  sm: 'h-7 gap-1.5 px-2.5 text-xs [&_svg]:size-3.5',
+  md: 'h-9 gap-2 px-3.5 text-[0.8125rem] [&_svg]:size-4',
+  lg: 'h-11 gap-2 px-5 text-sm [&_svg]:size-4',
+  icon: 'size-9 [&_svg]:size-4',
+  'icon-sm': 'size-7 [&_svg]:size-3.5',
 };
 
 const variants = {
-  primary: 'bg-primary text-primary-foreground shadow-xs hover:bg-primary-hover',
-  accent:
-    'bg-highlight text-highlight-foreground shadow-xs hover:shadow-glow hover:brightness-[1.03]',
-  secondary: 'bg-secondary text-secondary-foreground hover:bg-secondary-hover',
-  outline:
-    'border border-input bg-card text-foreground shadow-xs hover:border-foreground/30 hover:bg-muted',
-  ghost: 'text-foreground hover:bg-muted',
-  danger: 'bg-danger text-danger-foreground shadow-xs hover:bg-danger-hover',
-  link: 'h-auto overflow-visible rounded-none px-0 text-link underline-offset-4 hover:underline active:shadow-none active:brightness-100',
+  // Ink fill: the one step that moves the task forward.
+  primary:
+    'bg-primary text-primary-foreground shadow-[inset_0_-1px_0_0_oklch(0_0_0/0.25)] hover:bg-primary-hover',
+  // A sheet with an edge: every other action that changes something.
+  secondary:
+    'border border-input bg-secondary text-secondary-foreground hover:border-foreground/45 hover:bg-secondary-hover',
+  // Text that becomes a control on hover: dismissals, toolbars, low-stakes navigation.
+  tertiary: 'text-foreground hover:bg-foreground/[0.07] active:bg-foreground/10',
+  // Irreversible. Solid red, always paired with copy that names what is destroyed.
+  danger: 'bg-danger text-danger-foreground hover:bg-danger-hover',
+  // Destructive but routine (remove a row): red text, fills only on hover.
+  'danger-quiet':
+    'border border-danger/35 text-danger-soft-foreground hover:border-danger/60 hover:bg-danger-soft',
+  link: 'h-auto rounded-sm px-0 text-link underline decoration-link/35 underline-offset-[3px] hover:decoration-link active:scale-x-100',
 };
 
-// Matches --animate-loop-ripple in index.css.
-const RIPPLE_MS = 700;
-
-const prefersReducedMotion = () =>
-  window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
-
 /**
- * The brand's press feedback: an open loop (the logo's shape) expands and turns from the
- * pointer, over a soft glow. Keyboard presses ripple from the centre. Sits at -z-10 inside the
- * button's isolated stacking context, so it paints above the fill but beneath the label.
- */
-function useLoopRipple(enabled) {
-  const [ripples, setRipples] = useState([]);
-  const nextId = useRef(0);
-
-  const spawn = (el, x, y) => {
-    if (!enabled || prefersReducedMotion()) return;
-    const rect = el.getBoundingClientRect();
-    const size = Math.hypot(rect.width, rect.height) * 1.6;
-    const id = nextId.current++;
-    setRipples((rs) => [...rs, { id, x: x ?? rect.width / 2, y: y ?? rect.height / 2, size }]);
-    // Timer rather than animationend: that event is skipped in background tabs, which would leak.
-    setTimeout(() => setRipples((rs) => rs.filter((r) => r.id !== id)), RIPPLE_MS);
-  };
-
-  const handlers = {
-    onPointerDown: (e) => {
-      if (e.button !== 0) return;
-      const rect = e.currentTarget.getBoundingClientRect();
-      spawn(e.currentTarget, e.clientX - rect.left, e.clientY - rect.top);
-    },
-    // detail === 0 means the click came from the keyboard (Enter / Space).
-    onClick: (e) => e.detail === 0 && spawn(e.currentTarget),
-  };
-
-  const layer = ripples.map(({ id, x, y, size }) => (
-    <span
-      key={id}
-      aria-hidden="true"
-      className="pointer-events-none absolute -z-10 -translate-x-1/2 -translate-y-1/2"
-      style={{ left: x, top: y, width: size, height: size }}
-    >
-      <span className="absolute inset-0 animate-loop-glow rounded-full bg-current opacity-0" />
-      <svg
-        viewBox="0 0 40 40"
-        fill="none"
-        className="absolute inset-0 animate-loop-ripple opacity-0"
-        style={{ width: '100%', height: '100%' }}
-      >
-        <circle
-          cx="20"
-          cy="20"
-          r="18"
-          stroke="currentColor"
-          strokeWidth="1.75"
-          strokeLinecap="round"
-          pathLength="100"
-          strokeDasharray="74 26"
-          vectorEffect="non-scaling-stroke"
-        />
-      </svg>
-    </span>
-  ));
-
-  return { handlers, layer };
-}
-
-/**
- * variant: primary | accent | secondary | outline | ghost | danger | link
- *   primary is Tide in both themes; accent is Volt (one per screen, at most).
- * size: sm | md | lg | icon | icon-sm
+ * variant: primary | secondary | tertiary | danger | danger-quiet | link
+ *   One primary per view; destructive actions use danger (irreversible) or danger-quiet (routine).
+ * size: sm | md | lg | icon | icon-sm. Icon sizes need an aria-label.
  * Pass `as={Link}` to render a router link styled as a button.
  */
 export function Button({
@@ -110,14 +49,11 @@ export function Button({
   loading = false,
   disabled,
   type = 'button',
-  onPointerDown,
-  onClick,
   className,
   children,
   ...props
 }) {
   const isButton = Comp === 'button';
-  const ripple = useLoopRipple(variant !== 'link');
 
   return (
     <Comp
@@ -125,18 +61,15 @@ export function Button({
       disabled={isButton ? disabled || loading : undefined}
       aria-disabled={!isButton && disabled ? true : undefined}
       aria-busy={loading || undefined}
-      className={cn(base, sizes[size], variants[variant], className)}
-      onPointerDown={(e) => {
-        ripple.handlers.onPointerDown(e);
-        onPointerDown?.(e);
-      }}
-      onClick={(e) => {
-        ripple.handlers.onClick(e);
-        onClick?.(e);
-      }}
+      className={cn(
+        base,
+        sizes[size],
+        variants[variant],
+        loading && 'disabled:opacity-80',
+        className,
+      )}
       {...props}
     >
-      {ripple.layer}
       {loading && <Spinner label="" />}
       {children}
     </Comp>

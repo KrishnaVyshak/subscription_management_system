@@ -1,14 +1,15 @@
 import { cn } from '@/lib/utils';
 
 const tones = {
-  brand: 'bg-primary',
-  tide: 'bg-tide-500 dark:bg-tide-400',
+  ink: 'bg-foreground',
+  accent: 'bg-accent',
   success: 'bg-success',
   warning: 'bg-warning',
   danger: 'bg-danger',
 };
 
-export function Progress({ value, max = 100, tone = 'brand', label, className }) {
+// A flat meter with square ends, so it reads as a measure rather than a loading bar.
+export function Progress({ value, max = 100, tone = 'ink', label, className }) {
   const pct = Math.min(100, Math.max(0, (value / max) * 100));
   return (
     <div
@@ -17,10 +18,10 @@ export function Progress({ value, max = 100, tone = 'brand', label, className })
       aria-valuemin={0}
       aria-valuemax={max}
       aria-label={label}
-      className={cn('h-2 w-full overflow-hidden rounded-full bg-muted', className)}
+      className={cn('h-1.5 w-full overflow-hidden bg-muted', className)}
     >
       <div
-        className={cn('h-full rounded-full transition-[width] duration-500', tones[tone])}
+        className={cn('h-full transition-[width] duration-300', tones[tone])}
         style={{ width: `${pct}%` }}
       />
     </div>
