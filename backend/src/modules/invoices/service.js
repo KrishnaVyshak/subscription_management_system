@@ -1,29 +1,32 @@
 import { query, withTransaction } from '../../config/db.js';
-import { todayIST } from '../../lib/dates.js';
 import { BusinessRuleError, NotFoundError } from '../../lib/errors.js';
 import { releaseInvoiceUsages } from '../discounts/engine.js';
 import { usagesForInvoice } from '../discounts/service.js';
+import { paymentsForInvoice } from '../payments/service.js';
 import * as repo from './repo.js';
 
 const db = { query };
 
-export async function list(filters, today = todayIST()) {
-  const { rows, total, status_counts: statusCounts, totals } = await repo.list(db, filters, today);
+export async function list(filters) {
+  const { rows, total, status_counts: statusCounts, totals } = await repo.list(db, filters);
   return { rows, total, statusCounts, totals };
 }
 
-export function listAll(filters, today = todayIST()) {
-  return repo.listAll(db, filters, today);
+export function listAll(filters) {
+  return repo.listAll(db, filters);
 }
 
 // Payments and applied discounts of an invoice.
 export async function extrasFor(client, invoiceId) {
-  return { payments: [], discounts: await usagesForInvoice(client, invoiceId) };
+  return {
+    payments: await paymentsForInvoice(client, invoiceId),
+    discounts: await usagesForInvoice(client, invoiceId),
+  };
 }
 
 // `customerId` scopes the lookup for the portal (other customers' invoices are 404).
-export async function getDetail(id, { customerId } = {}, today = todayIST()) {
-  const invoice = await repo.findById(db, id, today);
+export async function getDetail(id, { customerId } = {}) {
+  const invoice = await repo.findById(db, id);
   if (!invoice || (customerId && invoice.customer_id !== customerId)) {
     throw new NotFoundError('Invoice not found');
   }
@@ -40,8 +43,8 @@ export async function confirmLocked(client, invoice) {
   if (invoice.status !== 'draft') throw statusError(invoice, 'confirmed');
   const status = Number(invoice.total) === 0 ? 'paid' : 'confirmed';
   await client.query(
-    `update invoices set status = $2, confirmed_at = now(),
-            paid_at = case when $2 = 'paid' then now() else paid_at end
+    `update invoices set status = $2::invoice_status, confirmed_at = now(),
+            paid_at = case when $2::invoice_status = 'paid' then now() else paid_at end
       where id = $1`,
     [invoice.id, status],
   );

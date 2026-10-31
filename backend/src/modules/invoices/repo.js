@@ -15,20 +15,15 @@ const MONEY = ['subtotal', 'discount_total', 'tax_total', 'total', 'amount_paid'
 const moneyAsText = (alias) =>
   `jsonb_build_object(${MONEY.map((m) => `'${m}', ${alias}.${m}::text`).join(', ')})`;
 
-// Invoices with customer name and the overdue flags (confirmed, past due in IST, amount due).
-export function overviewSql(todayParam) {
-  return `select i.*, c.name as customer_name, s.number as subscription_number,
-                 (i.status = 'confirmed' and i.due_date < ${todayParam}::date and i.amount_due > 0) as is_overdue,
-                 case when i.status = 'confirmed' and i.due_date < ${todayParam}::date and i.amount_due > 0
-                      then ${todayParam}::date - i.due_date else 0 end as days_overdue
-            from invoices i
-            join customers c on c.id = i.customer_id
-            join subscriptions s on s.id = i.subscription_id`;
-}
+// invoice_overview adds customer name, is_overdue and days_overdue (today in IST).
+export const OVERVIEW_SQL = `
+  select i.*, s.number as subscription_number
+    from invoice_overview i
+    join subscriptions s on s.id = i.subscription_id
+    join customers c on c.id = i.customer_id`;
 
-function filters(f, today) {
+function filters(f) {
   const w = new Where();
-  const todayP = w.param(today);
   if (f.customerId) w.add('i.customer_id = $?', f.customerId);
   if (f.subscriptionId) w.add('i.subscription_id = $?', f.subscriptionId);
   if (f.from) w.add('i.invoice_date >= $?', f.from);
@@ -40,15 +35,15 @@ function filters(f, today) {
   const narrow = [];
   if (f.status?.length) narrow.push(`status = any(${w.param(f.status)}::invoice_status[])`);
   if (f.overdue !== undefined) narrow.push(f.overdue ? 'is_overdue' : 'not is_overdue');
-  return { w, todayP, narrow: narrow.length ? `where ${narrow.join(' and ')}` : '' };
+  return { w, narrow: narrow.length ? `where ${narrow.join(' and ')}` : '' };
 }
 
 // One statement: page rows, total, per-status counts and money totals of the filtered set.
-export async function list(db, f, today) {
-  const { w, todayP, narrow } = filters(f, today);
+export async function list(db, f) {
+  const { w, narrow } = filters(f);
   const offset = (f.page - 1) * f.pageSize;
   const { rows } = await db.query(
-    `with f as (${overviewSql(todayP)} ${w}),
+    `with f as (${OVERVIEW_SQL} ${w}),
      ranked as (
        select f.*, row_number() over (order by ${parseSort(f.sort, SORT, 'invoice_date desc, number desc')}, id) as rn
          from f ${narrow}
@@ -71,10 +66,10 @@ export async function list(db, f, today) {
 }
 
 // Every filtered row (for CSV export), ordered like the list.
-export async function listAll(db, f, today) {
-  const { w, todayP, narrow } = filters(f, today);
+export async function listAll(db, f) {
+  const { w, narrow } = filters(f);
   const { rows } = await db.query(
-    `with f as (${overviewSql(todayP)} ${w})
+    `with f as (${OVERVIEW_SQL} ${w})
      select * from f ${narrow}
       order by ${parseSort(f.sort, SORT, 'invoice_date desc, number desc')}, id
       limit 50000`,
@@ -83,8 +78,8 @@ export async function listAll(db, f, today) {
   return rows;
 }
 
-export async function findById(db, id, today) {
-  const { rows } = await db.query(`${overviewSql('$2')} where i.id = $1`, [id, today]);
+export async function findById(db, id) {
+  const { rows } = await db.query(`${OVERVIEW_SQL} where i.id = $1`, [id]);
   return rows[0] ?? null;
 }
 

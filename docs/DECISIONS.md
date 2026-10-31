@@ -96,3 +96,10 @@ Where `docs/BACKEND_SPEC.md` is silent or does not match this repo, this file re
 - Once `usage_count > 0`, `type`, `value` and `scope` are locked (`DISCOUNT_IN_USE`). Name, window, limits and products stay editable. `usageLimit` can't go below `usage_count`.
 - Attaching or detaching subscription discounts (`POST/DELETE /subscriptions/:id/discounts[/:discountId]`) is **admin only**, because discounts are admin-only rules. Only `subscription`-scope discounts can be attached (`DISCOUNT_SCOPE`), and not to closed subscriptions.
 - The integration-test Postgres is initialised as UTF-8, matching Supabase.
+
+## Payments and receivables (phase 6)
+- Payments lock the invoice row. Only `confirmed` invoices accept payments (`INVOICE_NOT_CONFIRMED`), and `0 < amount ≤ amount_due` (`OVERPAYMENT`, with `details.amountDue`). When the amount due reaches 0, the invoice becomes `paid` with `paid_at` set.
+- `paymentDate` defaults to today (IST) and cannot be in the future. Payments store `customer_id` for fast customer and portal lists.
+- `DELETE /payments/:id` (admin only) subtracts the amount and returns a `paid` invoice to `confirmed`, clearing `paid_at`.
+- `invoice_overview` is a `security_invoker` view. "Today" is `now() at time zone 'Asia/Kolkata'`. Invoice lists, details and receivables all read from it, so the overdue flags agree everywhere.
+- Receivables only count `confirmed` invoices with an amount due. Ageing buckets are `not_due` (due today or later), `1–30`, `31–60`, `61–90` and `90+` days past the due date. "Collected this month" sums payment amounts dated from the 1st of the current IST month to today.
