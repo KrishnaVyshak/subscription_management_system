@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import request from 'supertest';
 
-vi.mock('../config/db.js', () => ({ query: vi.fn() }));
+vi.mock('../config/db.js', async (importOriginal) => ({ ...(await importOriginal()), query: vi.fn() }));
 
 const { query } = await import('../config/db.js');
 const { createApp } = await import('../app.js');

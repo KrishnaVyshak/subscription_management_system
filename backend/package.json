@@ -6,7 +6,10 @@
   "scripts": {
     "dev": "node --watch src/index.js",
     "start": "node src/index.js",
-    "test": "vitest run"
+    "mail:test": "node src/scripts/send-test-email.js",
+    "test": "vitest run",
+    "create-admin": "node scripts/create-admin.js",
+    "db:migrate": "node scripts/migrate.js"
   },
   "dependencies": {
     "@brightloop/shared": "^0.1.0",
@@ -20,7 +23,7 @@
     "express": "^4.22.3",
     "express-rate-limit": "^8.7.2",
     "helmet": "^8.3.0",
-    "jsonwebtoken": "^9.0.3",
+    "jose": "^6.2.14",
     "morgan": "^1.12.1",
     "node-cron": "^4.6.0",
     "nodemailer": "^10.3.1",
@@ -29,6 +32,9 @@
     "zod": "^4.6.7"
   },
   "devDependencies": {
+    "@faker-js/faker": "^10.6.0",
+    "autocannon": "^8.0.0",
+    "embedded-postgres": "^18.6.0-beta.19",
     "supertest": "^7.3.1",
     "vitest": "^5.0.5"
   }

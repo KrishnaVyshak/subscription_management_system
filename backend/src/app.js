@@ -8,7 +8,7 @@ import morgan from 'morgan';
 import rateLimit from 'express-rate-limit';
 import { env, isProd, rootDir } from './config/env.js';
 import { errorHandler, notFound } from './middleware/errorHandler.js';
-import healthRoutes from './modules/health/routes.js';
+import { apiRouter } from './routes.js';
 
 export function createApp() {
   const app = express();
@@ -23,10 +23,16 @@ export function createApp() {
 
   app.use(
     '/api/auth',
-    rateLimit({ windowMs: 15 * 60 * 1000, limit: 20, standardHeaders: true, legacyHeaders: false }),
+    rateLimit({
+      windowMs: 15 * 60 * 1000,
+      limit: 20,
+      standardHeaders: true,
+      legacyHeaders: false,
+      skip: () => env.NODE_ENV === 'test',
+    }),
   );
 
-  app.use('/api/health', healthRoutes);
+  app.use('/api', apiRouter());
 
   app.use('/api', notFound);
 

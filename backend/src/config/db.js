@@ -1,6 +1,11 @@
 import pg from 'pg';
 import { env } from './env.js';
 
+// DATE columns stay 'YYYY-MM-DD' strings (no timezone shifts); counts come back as numbers.
+// NUMERIC stays a string so money never touches a float.
+pg.types.setTypeParser(1082, (v) => v);
+pg.types.setTypeParser(20, (v) => Number.parseInt(v, 10));
+
 const isLocalDb = /@(localhost|127\.0\.0\.1)[:/]/.test(env.DATABASE_URL);
 
 export const pool = new pg.Pool({

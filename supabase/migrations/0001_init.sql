@@ -1,6 +1,8 @@
 -- Phase 0: extensions, shared enums and helper functions.
 -- Enum values must match shared/src/constants.js.
 
+create schema if not exists extensions;
+create extension if not exists pgcrypto with schema extensions;
 create extension if not exists pg_trgm with schema extensions;
 
 create type public.user_role as enum ('admin', 'staff', 'customer');

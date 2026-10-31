@@ -23,6 +23,12 @@ const schema = z.object({
   SMTP_USER: z.string().optional(),
   SMTP_PASS: z.string().optional(),
   SMTP_FROM: z.string().optional(),
+  MAIL_FROM: z.string().optional(),
+  ADMIN_EMAIL: z.email().optional(),
+  ADMIN_PASSWORD: z.string().optional(),
+  DEMO_MODE: z.stringbool().default(false),
+  JOBS_ENABLED: z.stringbool().default(true),
+  TEST_DATABASE_URL: z.string().optional(),
 });
 
 // Treat empty strings from a half-filled .env as "not set".
@@ -37,5 +43,8 @@ if (!parsed.success) {
   process.exit(1);
 }
 
-export const env = Object.freeze(parsed.data);
+export const env = Object.freeze({
+  ...parsed.data,
+  MAIL_FROM: parsed.data.MAIL_FROM ?? parsed.data.SMTP_FROM,
+});
 export const isProd = env.NODE_ENV === 'production';

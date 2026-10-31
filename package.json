@@ -16,11 +16,11 @@
     "build": "npm run build -w frontend",
     "start": "npm run start -w backend",
     "db:new": "supabase migration new",
-    "db:migrate": "supabase db push",
-    "seed": "supabase db push --include-seed",
+    "db:migrate": "node backend/scripts/migrate.js",
     "test": "npm run test --workspaces --if-present",
     "lint": "eslint .",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "create-admin": "npm run create-admin -w backend"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
