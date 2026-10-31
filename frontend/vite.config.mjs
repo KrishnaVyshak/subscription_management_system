@@ -18,7 +18,8 @@ export default defineConfig({
     // Lets Cloudflare quick tunnels (`cloudflared tunnel --url`) reach the dev server.
     allowedHosts: ['.trycloudflare.com'],
     proxy: {
-      '/api': 'http://localhost:4000',
+      // API_PROXY_TARGET points the dev server at another API instance (e.g. a second backend).
+      '/api': process.env.API_PROXY_TARGET || 'http://localhost:4000',
     },
   },
   test: {

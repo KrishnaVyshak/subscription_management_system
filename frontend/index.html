@@ -12,15 +12,8 @@
       href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100..125,400..700&family=JetBrains+Mono:wght@400;500;600&display=swap"
       rel="stylesheet"
     />
-    <!-- Apply the saved theme before first paint so dark mode doesn't flash. Mirrors src/hooks/use-theme.js. -->
-    <script>
-      try {
-        var t = localStorage.getItem('brightloop-theme');
-        if (t === 'dark' || (t !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches)) {
-          document.documentElement.classList.add('dark');
-        }
-      } catch (_) {}
-    </script>
+    <!-- Applies the saved theme before first paint (see public/theme-init.js). -->
+    <script src="/theme-init.js"></script>
     <title>Brightloop Subscriptions</title>
   </head>
   <body>

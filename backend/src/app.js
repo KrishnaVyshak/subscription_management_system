@@ -15,7 +15,11 @@ export function createApp() {
 
   app.disable('x-powered-by');
   app.set('trust proxy', 1);
-  app.use(helmet({ contentSecurityPolicy: isProd ? undefined : false }));
+  // The served SPA signs in with Supabase straight from the browser, so allow that origin.
+  const csp = {
+    directives: { connectSrc: ["'self'", ...(env.SUPABASE_URL ? [env.SUPABASE_URL] : [])] },
+  };
+  app.use(helmet({ contentSecurityPolicy: isProd ? csp : false }));
   app.use(compression());
   if (!isProd) app.use(cors({ origin: env.APP_URL }));
   app.use(express.json({ limit: '1mb' }));

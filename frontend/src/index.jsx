@@ -1,24 +1,22 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { BrowserRouter } from 'react-router-dom';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { RouterProvider } from 'react-router-dom';
+import { QueryClientProvider } from '@tanstack/react-query';
+import { AuthProvider } from './auth/AuthProvider';
 import { ThemedToaster } from './components/themed-toaster';
+import { queryClient } from './lib/queryClient';
+import { createRouter } from './router';
 import './index.css';
-import App from './App';
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: { staleTime: 30_000, retry: 1, refetchOnWindowFocus: false },
-  },
-});
+const router = createRouter();
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <App />
+      <AuthProvider>
+        <RouterProvider router={router} />
         <ThemedToaster position="top-right" />
-      </BrowserRouter>
+      </AuthProvider>
     </QueryClientProvider>
   </React.StrictMode>,
 );

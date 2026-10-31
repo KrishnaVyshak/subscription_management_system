@@ -51,7 +51,7 @@ export function Dialog({ open, onClose, title, description, footer, className, c
           <X />
         </Button>
       </header>
-      <div className="px-5 py-5">{children}</div>
+      {children && <div className="px-5 py-5">{children}</div>}
       {footer && (
         <footer className="flex flex-col-reverse gap-2 border-t bg-sunken/60 px-5 py-3 sm:flex-row sm:justify-end">
           {footer}

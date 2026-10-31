@@ -1,19 +1,14 @@
-import { lazy, Suspense } from 'react';
-import { Link, Route, Routes } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowUpRight, RefreshCw } from 'lucide-react';
 import { APP_TIMEZONE } from '@brightloop/shared';
-import { api } from './api/client';
+import { http } from '@/lib/api';
 import { Logo } from '@/components/brand/logo';
 import { Alert } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Spinner } from '@/components/ui/spinner';
 import { cn } from '@/lib/utils';
-
-// Showcase pulls in Recharts; keep it out of the main bundle.
-const DesignSystemPage = lazy(() => import('./pages/design-system/DesignSystemPage'));
 
 const REFRESH_MS = 15_000;
 
@@ -23,7 +18,7 @@ function useHealth() {
     // 503 still carries a useful body (db: 'down'), so don't treat it as a thrown error.
     // A non-JSON body (proxy error page, empty reply) means the API itself isn't answering.
     queryFn: () =>
-      api.get('/health', { validateStatus: () => true }).then((r) => {
+      http.get('/health', { validateStatus: () => true }).then((r) => {
         if (!r.data || typeof r.data !== 'object') {
           throw new Error(`Unexpected response from /api/health (HTTP ${r.status}).`);
         }
@@ -49,7 +44,7 @@ function StatusRow({ label, children }) {
   );
 }
 
-function HealthPage() {
+export default function StatusPage() {
   const health = useHealth();
   const { data, isPending, isError, isFetching, error, refetch } = health;
   const { headline, tone } = summarise(health);
@@ -146,24 +141,5 @@ function HealthPage() {
         </div>
       </footer>
     </div>
-  );
-}
-
-function PageFallback() {
-  return (
-    <div className="grid min-h-screen place-items-center text-muted-foreground">
-      <Spinner className="size-5" />
-    </div>
-  );
-}
-
-export default function App() {
-  return (
-    <Suspense fallback={<PageFallback />}>
-      <Routes>
-        <Route path="/" element={<HealthPage />} />
-        <Route path="/design-system" element={<DesignSystemPage />} />
-      </Routes>
-    </Suspense>
   );
 }
