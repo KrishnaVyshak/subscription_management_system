@@ -178,7 +178,7 @@ function ButtonsSpecimen() {
                 variant="tertiary"
                 size="icon-sm"
                 aria-label="Delete draft"
-                className="text-danger-soft-foreground hover:bg-danger-soft"
+                className="text-danger-soft-foreground hover:before:bg-danger-soft"
               >
                 <Trash2 />
               </Button>

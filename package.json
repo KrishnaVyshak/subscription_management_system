@@ -20,7 +20,11 @@
     "test": "npm run test --workspaces --if-present",
     "lint": "eslint .",
     "format": "prettier --write .",
-    "create-admin": "npm run create-admin -w backend"
+    "create-admin": "npm run create-admin -w backend",
+    "seed": "npm run seed -w backend",
+    "seed:large": "npm run seed:large -w backend",
+    "reset-demo": "npm run reset-demo -w backend",
+    "perf-check": "npm run perf-check -w backend"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

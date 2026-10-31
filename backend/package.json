@@ -9,7 +9,11 @@
     "mail:test": "node src/scripts/send-test-email.js",
     "test": "vitest run",
     "create-admin": "node scripts/create-admin.js",
-    "db:migrate": "node scripts/migrate.js"
+    "db:migrate": "node scripts/migrate.js",
+    "seed": "node scripts/seed.js",
+    "seed:large": "node scripts/seed-large.js",
+    "reset-demo": "node scripts/reset-demo.js",
+    "perf-check": "node scripts/perf-check.js"
   },
   "dependencies": {
     "@brightloop/shared": "^0.1.0",
