@@ -1,0 +1,2 @@
+-- Development seed data (admin, staff, taxes, payment terms, demo catalog).
+-- Filled in as each phase adds its tables; see Phase 10 in the roadmap.

@@ -1,16 +1,28 @@
 {
-  "name": "subscription_management_system",
+  "name": "@brightloop/frontend",
   "version": "0.1.0",
   "private": true,
   "type": "module",
   "dependencies": {
+    "@brightloop/shared": "^0.1.0",
+    "@hookform/resolvers": "^6.0.2",
+    "@supabase/supabase-js": "^2.118.0",
+    "@tanstack/react-query": "^5.105.0",
+    "@tanstack/react-table": "^9.3.1",
     "@testing-library/dom": "^10.4.2",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.3",
     "@testing-library/user-event": "^13.5.0",
+    "axios": "^1.21.0",
+    "date-fns": "^4.4.0",
+    "lucide-react": "^1.66.0",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
-    "web-vitals": "^2.1.4"
+    "react-hook-form": "^7.91.0",
+    "react-router-dom": "^7.18.5",
+    "recharts": "^3.10.1",
+    "sonner": "^2.0.8",
+    "zod": "^4.6.7"
   },
   "scripts": {
     "dev": "vite",
@@ -21,8 +33,10 @@
     "test:watch": "vitest"
   },
   "devDependencies": {
+    "@tailwindcss/vite": "^4.3.3",
     "@vitejs/plugin-react": "^6.1.2",
     "jsdom": "^30.1.3",
+    "tailwindcss": "^4.3.3",
     "vite": "^8.3.5",
     "vitest": "^5.0.5"
   }
