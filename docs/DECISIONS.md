@@ -103,3 +103,11 @@ Where `docs/BACKEND_SPEC.md` is silent or does not match this repo, this file re
 - `DELETE /payments/:id` (admin only) subtracts the amount and returns a `paid` invoice to `confirmed`, clearing `paid_at`.
 - `invoice_overview` is a `security_invoker` view. "Today" is `now() at time zone 'Asia/Kolkata'`. Invoice lists, details and receivables all read from it, so the overdue flags agree everywhere.
 - Receivables only count `confirmed` invoices with an amount due. Ageing buckets are `not_due` (due today or later), `1–30`, `31–60`, `61–90` and `90+` days past the due date. "Collected this month" sums payment amounts dated from the 1st of the current IST month to today.
+
+## PDF, email, CSV (phase 7)
+- PDFs use pdfkit's built-in Helvetica, which has no ₹ glyph, so amounts print as `INR 1,180.00` (Indian digit grouping). The stamp is `PAID` (paid), `OVERDUE` (overdue) or `CANCELLED`. Only snapshot data is used: the company and customer snapshots and the invoice line and tax snapshots.
+- Emails go to the invoice's `customer_snapshot.email`. Without full SMTP settings, emails are logged to the console instead and the API reports `email: { logged: true }`.
+- `POST /invoices/:id/send` confirms a draft first, then renders, emails and sets `sent_at`. A cancelled invoice cannot be sent.
+- `POST /invoices/send-bulk { invoiceIds }` (max 100) sends one by one and reports per-invoice results. One failure doesn't stop the rest.
+- `POST /invoices/:id/remind` only works for overdue invoices (`NOT_OVERDUE`). It does not change the invoice.
+- `GET /invoices?format=csv` exports every row matching the filters (up to 50,000) with the same sort, as RFC 4180 CSV.
