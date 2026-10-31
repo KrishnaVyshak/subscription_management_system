@@ -63,3 +63,20 @@ Where `docs/BACKEND_SPEC.md` is silent or does not match this repo, this file re
 - Close sets `closed_at` = today, `close_reason` = the given `reason` or `manual`, and clears `next_invoice_date`.
 - **Renewal term**: the original term is `expiry_date − start_date + 1` days, computed at the first renewal and stored in `term_days`. Each renewal adds that many days to `expiry_date`. Renewal is allowed for confirmed, active or paused subscriptions, and for subscriptions closed with reason `expired`; those reopen as active. Billing resumes from the next unbilled period, so periods missed while the subscription was closed are billed by catch-up.
 - `allowedActions` lists every transition target that passes its checks for the current user, plus `edit`, `renew` and `invoice` where they apply.
+
+## Billing, invoices, tax (phase 4)
+- **Billing in advance**: each invoice covers one period. `invoice_date` = period start, and `due_date` = invoice date + payment-term days (0 without a term). A subscription is due when it is active, `next_invoice_date ≤ asOfDate`, and `next_invoice_date ≤ expiry_date` (when set).
+- **Never twice, never skipped**:
+  - Each subscription is billed in its own transaction under `FOR UPDATE SKIP LOCKED`.
+  - The partial unique index `(subscription_id, period_start) WHERE status <> 'cancelled'` with `ON CONFLICT DO NOTHING` makes a duplicate impossible, even across processes.
+  - The catch-up loop bills every period up to `asOfDate`, and periods are always computed from the anchor.
+  - A unique partial index on `billing_runs (status = 'running')` lets only one run exist at a time (409). A run older than an hour that is still `running` is marked failed before a new one starts.
+- Skipped means the period already had a live invoice, or the row was locked by another biller.
+- The invoice number's year comes from the invoice date. A number consumed by a conflicting insert leaves a gap. This is rare, because the row lock prevents most conflicts.
+- Invoices snapshot the customer (`customer_snapshot`) and the company setting (`company_snapshot`), plus each line's taxes (name, type, rate, included, amount). PDFs are built from these snapshots only.
+- `invoice.auto_confirm` (default true) creates invoices as `confirmed`, otherwise as `draft`. A confirmed invoice with a total of 0 (fully discounted) is marked `paid` immediately.
+- **Tax rounding**: each tax is rounded per line. Price-included percent taxes extract the net as `(amount − included fixed) / (1 + Σ included rates)`. Excluded taxes apply to the taxable amount. `taxable + tax = amount` holds exactly per line, and header totals are the sums of the rounded lines.
+- Invoice discount spread: proportional to each line's net after line discounts. The last line with a positive net takes the rounding remainder, and no line's share ever exceeds its net.
+- `POST /subscriptions/:id/invoices` bills exactly one period, the next unbilled one, whatever its date. It returns 422 `NOT_ACTIVE` / `PAST_EXPIRY`, or 409 if that period is already invoiced or locked.
+- **Cancel**: only `draft` or `confirmed` invoices with `amount_paid = 0` (`INVOICE_HAS_PAYMENTS`). Cancelling releases discount usages but does **not** rewind the subscription, so a cancelled period stays unbilled unless an admin re-bills it by hand.
+- `POST /billing/run` defaults `asOfDate` to today (IST). A future date needs `DEMO_MODE`, otherwise 422 `FUTURE_DATE_NOT_ALLOWED`. Past dates are allowed, for catch-up and seeding.

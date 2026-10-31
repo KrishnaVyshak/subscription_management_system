@@ -40,13 +40,21 @@ export async function findById(db, id) {
   return rows[0] ?? null;
 }
 
-export async function counts(id) {
+export async function counts(id, today) {
   const { rows } = await query(
-    `select count(*) filter (where status = 'active') as active_subscriptions,
-            count(*) filter (where status = 'paused') as paused_subscriptions,
-            count(*) as total_subscriptions
-       from subscriptions where customer_id = $1`,
-    [id],
+    `select s.active_subscriptions, s.paused_subscriptions, s.total_subscriptions,
+            i.outstanding_invoices, i.outstanding_amount, i.overdue_invoices, i.overdue_amount
+       from (select count(*) filter (where status = 'active') as active_subscriptions,
+                    count(*) filter (where status = 'paused') as paused_subscriptions,
+                    count(*) as total_subscriptions
+               from subscriptions where customer_id = $1) s,
+            (select count(*) filter (where status = 'confirmed' and amount_due > 0) as outstanding_invoices,
+                    coalesce(sum(amount_due) filter (where status = 'confirmed'), 0)::text as outstanding_amount,
+                    count(*) filter (where status = 'confirmed' and amount_due > 0 and due_date < $2) as overdue_invoices,
+                    coalesce(sum(amount_due) filter (where status = 'confirmed' and due_date < $2), 0)::text
+                      as overdue_amount
+               from invoices where customer_id = $1) i`,
+    [id, today],
   );
   return rows[0];
 }

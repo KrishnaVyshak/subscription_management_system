@@ -72,6 +72,21 @@ export async function seedCatalog() {
   };
 }
 
+// Creates a subscription through the service and walks it to `status` (default active).
+export async function makeSubscription(user, { customerId, planId, startDate, expiryDate, status = 'active', lines }) {
+  const subscriptions = await import('../../modules/subscriptions/service.js');
+  const sub = await subscriptions.create({ customerId, planId, startDate, expiryDate }, user, startDate);
+  if (lines) await subscriptions.update(sub.id, { lines }, user, startDate);
+  const path = { draft: [], quotation: ['quotation'], confirmed: ['quotation', 'confirmed'] };
+  const steps = path[status] ?? ['quotation', 'confirmed', 'active'];
+  for (const to of steps) await subscriptions.transition(sub.id, { to }, user, startDate);
+  if (status === 'paused') await subscriptions.transition(sub.id, { to: 'paused' }, user, startDate);
+  if (status === 'closed') {
+    await subscriptions.transition(sub.id, { to: 'closed', force: true }, { ...user, role: 'admin' }, startDate);
+  }
+  return sub.id;
+}
+
 export async function makeCustomer(name = 'Acme Corp', email) {
   return one(`insert into customers (name, email) values ($1, $2) returning *`, [
     name,

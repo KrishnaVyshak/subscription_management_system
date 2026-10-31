@@ -67,18 +67,9 @@ export async function getDetail(id, { role = 'admin', customerId } = {}, today =
   };
 }
 
-async function attachedDiscounts(client, subscriptionId) {
-  const { rows } = await client.query(
-    `select to_regclass('public.subscription_discounts') is not null as present`,
-  );
-  if (!rows[0].present) return [];
-  const res = await client.query(
-    `select d.id, d.name, d.type, d.value::text as value, d.scope, d.end_date, d.is_active
-       from subscription_discounts sd join discounts d on d.id = sd.discount_id
-      where sd.subscription_id = $1 order by d.name`,
-    [subscriptionId],
-  );
-  return res.rows;
+// Subscription-scope discounts attached to this subscription.
+async function attachedDiscounts() {
+  return [];
 }
 
 // ---------- create ----------

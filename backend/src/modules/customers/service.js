@@ -1,6 +1,7 @@
 import { query } from '../../config/db.js';
 import { sendPasswordSetup } from '../../lib/authUsers.js';
 import { insertRow, updateRow } from '../../lib/crud.js';
+import { todayIST } from '../../lib/dates.js';
 import { ConflictError, NotFoundError } from '../../lib/errors.js';
 import { createCustomerLogin } from '../auth/service.js';
 import * as repo from './repo.js';
@@ -14,7 +15,7 @@ export function list(filters) {
 export async function get(id) {
   const customer = await repo.findById(db, id);
   if (!customer) throw new NotFoundError('Customer not found');
-  return { ...customer, ...(await repo.counts(id)) };
+  return { ...customer, ...(await repo.counts(id, todayIST())) };
 }
 
 export async function create(body, userId) {

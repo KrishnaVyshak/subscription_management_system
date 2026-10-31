@@ -19,5 +19,6 @@ router.post(
   h(c.transition),
 );
 router.post('/:id/renew', validate({ params: idParams }), h(c.renew));
+router.post('/:id/invoices', validate({ params: idParams }), h(c.invoiceNow));
 
 export default router;

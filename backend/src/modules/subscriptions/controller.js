@@ -1,5 +1,12 @@
 import { sendData, sendList } from '../../lib/http.js';
+import { invoiceNextPeriod } from '../billing/service.js';
+import { getDetail as getInvoice } from '../invoices/service.js';
 import * as service from './service.js';
+
+export async function invoiceNow(req, res) {
+  const invoiceId = await invoiceNextPeriod(req.params.id, req.user.id);
+  sendData(res, await getInvoice(invoiceId), 201);
+}
 
 export async function list(req, res) {
   const { rows, total, statusCounts } = await service.list(req.query);

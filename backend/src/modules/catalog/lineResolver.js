@@ -12,24 +12,23 @@ export async function resolveLines(db, lines, plan) {
   const productIds = [...new Set(lines.map((l) => l.productId))];
   const variantIds = [...new Set(lines.map((l) => l.variantId).filter(Boolean))];
 
-  const [{ rows: products }, { rows: variants }] = await Promise.all([
-    db.query(
-      `select p.id, p.name, p.type, p.sales_price, p.is_active,
-              coalesce(array_agg(pt.tax_id) filter (where pt.tax_id is not null), '{}') as tax_ids
-         from products p left join product_taxes pt on pt.product_id = p.id
-        where p.id = any($1) group by p.id`,
-      [productIds],
-    ),
-    db.query(
-      `select v.id, v.product_id, v.name, v.is_active,
-              coalesce(array_agg(av.extra_price::text) filter (where av.id is not null), '{}') as extras
-         from product_variants v
-         left join product_variant_values pvv on pvv.variant_id = v.id
-         left join attribute_values av on av.id = pvv.attribute_value_id
-        where v.id = any($1) group by v.id`,
-      [variantIds],
-    ),
-  ]);
+  // Sequential: `db` may be a transaction client.
+  const { rows: products } = await db.query(
+    `select p.id, p.name, p.type, p.sales_price, p.is_active,
+            coalesce(array_agg(pt.tax_id) filter (where pt.tax_id is not null), '{}') as tax_ids
+       from products p left join product_taxes pt on pt.product_id = p.id
+      where p.id = any($1) group by p.id`,
+    [productIds],
+  );
+  const { rows: variants } = await db.query(
+    `select v.id, v.product_id, v.name, v.is_active,
+            coalesce(array_agg(av.extra_price::text) filter (where av.id is not null), '{}') as extras
+       from product_variants v
+       left join product_variant_values pvv on pvv.variant_id = v.id
+       left join attribute_values av on av.id = pvv.attribute_value_id
+      where v.id = any($1) group by v.id`,
+    [variantIds],
+  );
   const productById = new Map(products.map((p) => [p.id, p]));
   const variantById = new Map(variants.map((v) => [v.id, v]));
 
