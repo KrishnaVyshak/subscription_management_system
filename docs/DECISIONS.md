@@ -42,3 +42,24 @@ Where `docs/BACKEND_SPEC.md` is silent or does not match this repo, this file re
 - Plan edits never affect existing subscriptions. A subscription copies the plan's price (on its plan line), `billing_period` and `interval_count` when it is created. Plan **flags** (closable, pausable, renewable, auto_close) are read live from the plan, because they are policy, not price.
 - Settings are returned as `[{ key, value }]` and updated with `PUT /settings/:key { value }`. Only `company` and `invoice.auto_confirm` are accepted.
 - Quantities are whole numbers.
+
+## Customers, templates, subscriptions (phase 3)
+- **Staff permissions**: staff have full access to customers, subscriptions, invoices and payments, and read-only access to the catalog (products, plans, taxes, terms, templates, settings, discounts). They cannot manage users, write catalog or discount rules, run billing, delete payments or run jobs. Only admins can `force` an early close.
+- Customer search uses the trigram index (`similarity` / `%`) on name, plus substring match on name and email. Results are ranked by similarity unless `sort` is given.
+- A customer's email is fixed once they have a portal login, because it is the login. `POST /customers/:id/invite` creates the login with a random password and emails a password-setup link.
+- Templates: when the template's lines don't include the plan's product, a plan line (min quantity, plan price) is added at the top. `unit_price` null means "use the current price" when a subscription is created.
+- New subscriptions start today (IST) unless `startDate` is given. `next_doc_number('SUB')` uses the start date's year.
+- **Line effective dates**: a line applies on day `d` when `starts_on ≤ d` (or null) and `ends_on ≥ d` (or null). `ends_on` is inclusive.
+- **Running edits** (active or paused) take effect on `next_invoice_date`, the start of the next unbilled period:
+  - A quantity change ends the current line the day before and inserts a copy with the new quantity, keeping its taxes. A line that hasn't started yet is edited in place.
+  - Add-ons must be products of type `addon` (`ADDON_ONLY`). Removing an add-on ends it the day before, or deletes it if it hasn't started.
+  - The plan line can't be removed (`PLAN_LINE_REQUIRED`) and must stay at or above `min_quantity` (`MIN_QUANTITY`).
+  - Any other field returns 422 `EDIT_NOT_ALLOWED`.
+- Draft or quotation edits can change every header field, and `lines` replaces the set. Changing the plan re-snapshots `billing_period` and `interval_count` and replaces the plan line.
+- Transitions check rules against the lines in effect from the next billing day onward.
+- Activation is allowed any time after confirmation. Billing still starts at `start_date`, because anchor = next_invoice_date = start_date.
+- "Early close" means closing an active or paused subscription before `expiry_date` (or with no expiry). It needs `plan.closable`, or an admin `force`.
+- **Resume**: anchor += days paused (today − paused_at). `next_invoice_date` is recomputed as period `periods_billed` from the new anchor. Expiry is not extended by the pause.
+- Close sets `closed_at` = today, `close_reason` = the given `reason` or `manual`, and clears `next_invoice_date`.
+- **Renewal term**: the original term is `expiry_date − start_date + 1` days, computed at the first renewal and stored in `term_days`. Each renewal adds that many days to `expiry_date`. Renewal is allowed for confirmed, active or paused subscriptions, and for subscriptions closed with reason `expired`; those reopen as active. Billing resumes from the next unbilled period, so periods missed while the subscription was closed are billed by catch-up.
+- `allowedActions` lists every transition target that passes its checks for the current user, plus `edit`, `renew` and `invoice` where they apply.
