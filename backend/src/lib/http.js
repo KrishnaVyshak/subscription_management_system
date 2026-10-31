@@ -32,6 +32,11 @@ export function parseSort(sort, fields, fallback) {
   return `${expr} ${desc ? 'desc' : 'asc'} nulls last`;
 }
 
+// Splits the `count(*) over() as total` column off page rows: { rows, total }.
+export function withTotal(rows, key = 'total') {
+  return { rows: rows.map(({ [key]: _total, ...r }) => r), total: rows[0]?.[key] ?? 0 };
+}
+
 export function pageClause({ page, pageSize }) {
   return { limit: pageSize, offset: (page - 1) * pageSize };
 }

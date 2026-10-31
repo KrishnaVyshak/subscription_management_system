@@ -1,5 +1,5 @@
 import { query, withTransaction } from '../../config/db.js';
-import { loadUser } from '../../middleware/auth.js';
+import { forgetUser, loadUser } from '../../middleware/auth.js';
 import { createAuthUser, deleteAuthUser, setAuthPassword } from '../../lib/authUsers.js';
 import { ConflictError } from '../../lib/errors.js';
 import * as repo from './repo.js';
@@ -50,6 +50,7 @@ export async function getMe(userId) {
 
 export async function updateMe(userId, { fullName }) {
   await repo.updateProfileName({ query }, userId, fullName);
+  forgetUser(userId);
   return getMe(userId);
 }
 

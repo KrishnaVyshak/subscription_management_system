@@ -1,5 +1,6 @@
 import { query } from '../../config/db.js';
 import { updateRow } from '../../lib/crud.js';
+import { forgetUser } from '../../middleware/auth.js';
 import { todayIST } from '../../lib/dates.js';
 import { BusinessRuleError, NotFoundError } from '../../lib/errors.js';
 import * as invoices from '../invoices/service.js';
@@ -164,6 +165,7 @@ export async function getProfile(user) {
 
 export async function updateProfile(user, { fullName, ...customer }) {
   if (fullName !== undefined) await updateRow({ query }, 'profiles', user.id, { fullName });
+  forgetUser(user.id);
   await updateRow({ query }, 'customers', user.customerId, customer);
   return getProfile(user);
 }

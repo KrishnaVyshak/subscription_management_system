@@ -1,7 +1,7 @@
 import { query, withTransaction } from '../../config/db.js';
 import { insertRow, updateRow } from '../../lib/crud.js';
 import { NotFoundError, ValidationError } from '../../lib/errors.js';
-import { Where, pageClause, parseSort } from '../../lib/http.js';
+import { pageClause, parseSort, Where, withTotal } from '../../lib/http.js';
 import { resolveLines } from '../catalog/lineResolver.js';
 
 const SORT = { name: 'lower(t.name)', createdAt: 't.created_at', validityDays: 't.validity_days' };
@@ -23,7 +23,7 @@ export async function list(f) {
       limit ${limit} offset ${offset}`,
     w.params,
   );
-  return { rows: rows.map(({ total, ...r }) => r), total: rows[0]?.total ?? 0 };
+  return withTotal(rows);
 }
 
 export async function getTemplate(db, id) {

@@ -1,64 +1,90 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { query } from '../../config/db.js';
-import { asyncHandler as h, listQuerySchema, pageClause, parseSort, sendData, sendList, Where } from '../../lib/http.js';
+import {
+  asyncHandler as h,
+  listQuerySchema,
+  pageClause,
+  parseSort,
+  sendData,
+  sendList,
+  Where,
+} from '../../lib/http.js';
 import { requireRole } from '../../middleware/auth.js';
 import { validate } from '../../middleware/validate.js';
 
 const TODAY = `(now() at time zone 'Asia/Kolkata')::date`;
 
-// Outstanding, overdue, collected this month and ageing buckets in one statement.
+// Outstanding, overdue, collected this month and ageing buckets in one statement. Open
+// invoices are bucketed once per row (same overdue rule as invoice_overview); the FILTER
+// clauses then work on the five bucket rows instead of every invoice.
 export async function summary() {
-  const bucket = (name, cond) =>
+  const bucket = (name) =>
     `'${name}', json_build_object(
-        'count', count(*) filter (where ${cond}),
-        'amount', coalesce(sum(amount_due) filter (where ${cond}), 0)::text)`;
-  const open = `status = 'confirmed' and amount_due > 0`;
+        'count', coalesce(sum(n) filter (where bucket = '${name}'), 0)::int,
+        'amount', coalesce(sum(amount) filter (where bucket = '${name}'), 0)::text)`;
   const { rows } = await query(
-    `select coalesce(sum(amount_due) filter (where ${open}), 0)::text as outstanding,
-            count(*) filter (where ${open}) as outstanding_count,
-            count(*) filter (where is_overdue) as overdue_count,
-            coalesce(sum(amount_due) filter (where is_overdue), 0)::text as overdue_amount,
+    `with b as (
+       select case when i.due_date >= t.today then 'not_due'
+                   when t.today - i.due_date <= 30 then 'days_1_30'
+                   when t.today - i.due_date <= 60 then 'days_31_60'
+                   when t.today - i.due_date <= 90 then 'days_61_90'
+                   else 'days_90_plus' end as bucket,
+              count(*) as n, sum(i.amount_due) as amount
+         from invoices i, (select ${TODAY} as today) t
+        where i.status = 'confirmed' and i.amount_due > 0
+        group by 1
+     )
+     select coalesce(sum(amount), 0)::text as outstanding,
+            coalesce(sum(n), 0)::int as outstanding_count,
+            coalesce(sum(n) filter (where bucket <> 'not_due'), 0)::int as overdue_count,
+            coalesce(sum(amount) filter (where bucket <> 'not_due'), 0)::text as overdue_amount,
             (select coalesce(sum(p.amount), 0)::text from payments p
               where p.payment_date between date_trunc('month', ${TODAY})::date and ${TODAY})
               as collected_this_month,
             json_build_object(
-              ${bucket('not_due', `${open} and not is_overdue`)},
-              ${bucket('days_1_30', 'is_overdue and days_overdue between 1 and 30')},
-              ${bucket('days_31_60', 'is_overdue and days_overdue between 31 and 60')},
-              ${bucket('days_61_90', 'is_overdue and days_overdue between 61 and 90')},
-              ${bucket('days_90_plus', 'is_overdue and days_overdue > 90')}
+              ${bucket('not_due')}, ${bucket('days_1_30')}, ${bucket('days_31_60')},
+              ${bucket('days_61_90')}, ${bucket('days_90_plus')}
             ) as ageing
-       from invoice_overview
-      where status = 'confirmed'`,
+       from b`,
   );
   return rows[0];
 }
 
 const overdueSchema = listQuerySchema.extend({ customerId: z.uuid().optional() });
-const SORT = { daysOverdue: 'v.days_overdue', amountDue: 'v.amount_due', dueDate: 'v.due_date' };
+// Columns of the narrow overdue set `o`.
+const SORT = { daysOverdue: 'days_overdue', amountDue: 'amount_due', dueDate: 'due_date' };
 
+// Overdue invoices (same rule as invoice_overview): counted from the open-invoice index, with
+// customer details fetched for the page only.
 export async function overdue(f) {
   const w = new Where();
-  w.add('v.is_overdue');
-  if (f.customerId) w.add('v.customer_id = $?', f.customerId);
+  w.add(`i.status = 'confirmed' and i.amount_due > 0 and i.due_date < ${TODAY}`);
+  if (f.customerId) w.add('i.customer_id = $?', f.customerId);
   if (f.search) {
     const p = w.param(`%${f.search}%`);
-    w.add(`(v.number ilike ${p} or v.customer_name ilike ${p})`);
+    w.add(`(i.number ilike ${p} or exists (select 1 from customers cx where cx.id = i.customer_id and cx.name ilike ${p}))`);
   }
   const { limit, offset } = pageClause(f);
   const { rows } = await query(
-    `select v.id, v.number, v.customer_id, v.customer_name, c.email as customer_email,
-            c.phone as customer_phone, v.subscription_id, v.invoice_date, v.due_date,
-            v.total::text as total, v.amount_paid::text as amount_paid, v.amount_due::text as amount_due,
-            v.days_overdue, v.sent_at, count(*) over() as total_count
-       from invoice_overview v join customers c on c.id = v.customer_id
-       ${w}
-      order by ${parseSort(f.sort, SORT, 'v.days_overdue desc')}, v.number
-      limit ${limit} offset ${offset}`,
+    `with o as (
+       select i.id, i.number, i.due_date, i.amount_due, ${TODAY} - i.due_date as days_overdue
+         from invoices i ${w}
+     )
+     select (select count(*) from o) as total,
+            (select coalesce(json_agg(r order by x.rn), '[]')
+               from unnest(array(select id from o order by ${parseSort(f.sort, SORT, 'days_overdue desc')}, number
+                                 limit ${limit} offset ${offset})) with ordinality as x(id, rn)
+               join lateral (
+                 select i.id, i.number, i.customer_id, c.name as customer_name, c.email as customer_email,
+                        c.phone as customer_phone, i.subscription_id, i.invoice_date, i.due_date,
+                        i.total::text as total, i.amount_paid::text as amount_paid,
+                        i.amount_due::text as amount_due, ${TODAY} - i.due_date as days_overdue, i.sent_at
+                   from invoices i join customers c on c.id = i.customer_id
+                  where i.id = x.id) r on true) as rows`,
     w.params,
   );
-  return { rows: rows.map(({ total_count: _t, ...r }) => r), total: rows[0]?.total_count ?? 0 };
+  return { rows: rows[0].rows, total: rows[0].total };
 }
 
 const router = Router();

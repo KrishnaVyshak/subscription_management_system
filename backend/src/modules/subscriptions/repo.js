@@ -123,37 +123,43 @@ export async function list(db, f, today) {
     const p = w.param(`%${f.search}%`);
     w.add(`(s.number ilike ${p} or c.name ilike ${p} or c.email ilike ${p})`);
   }
-  const statusFilter = f.status?.length ? `where status = any(${w.param(f.status)}::subscription_status[])` : '';
+  const cond = f.status?.length ? `status = any(${w.param(f.status)}::subscription_status[])` : 'true';
   const todayP = w.param(today);
   const offset = (f.page - 1) * f.pageSize;
   const order = parseSort(f.sort, SORT, 'created_at desc');
 
+  // Counts over the filtered set; plan names and recurring amounts only for the page.
   const { rows } = await db.query(
     `with f as (
        select s.id, s.number, s.status, s.customer_id, c.name as customer_name, s.plan_id,
-              pl.name as plan_name, s.billing_period, s.interval_count, s.start_date,
-              s.expiry_date, s.next_invoice_date, s.quote_valid_until, s.created_at
+              s.billing_period, s.interval_count, s.start_date, s.expiry_date, s.next_invoice_date,
+              s.quote_valid_until, s.created_at
          from subscriptions s
          join customers c on c.id = s.customer_id
-         join plans pl on pl.id = s.plan_id
          ${w}
      ),
-     ranked as (
-       select f.*, row_number() over (order by ${order}, id) as rn from f ${statusFilter}
-     ),
      page as (
-       select r.*,
-              (select coalesce(sum(l.quantity * l.unit_price), 0)::numeric(12,2)::text
-                 from subscription_lines l
-                where l.subscription_id = r.id
-                  and (l.starts_on is null or l.starts_on <= ${todayP})
-                  and (l.ends_on is null or l.ends_on >= ${todayP})) as recurring_amount
-         from ranked r where rn > ${offset} and rn <= ${offset + f.pageSize}
+       select x.id, x.rn
+         from unnest(array(select id from f where ${cond} order by ${order}, id
+                           limit ${f.pageSize} offset ${offset})) with ordinality as x(id, rn)
      )
-     select (select count(*) from ranked) as total,
+     select (select count(*) from f where ${cond}) as total,
             (select coalesce(json_object_agg(status, n), '{}')
                from (select status, count(*) as n from f group by status) x) as status_counts,
-            (select coalesce(json_agg(to_jsonb(page) - 'rn' order by rn), '[]') from page) as rows`,
+            (select coalesce(json_agg(to_jsonb(r) order by page.rn), '[]')
+               from page join lateral (
+                 select s.id, s.number, s.status, s.customer_id, c.name as customer_name, s.plan_id,
+                        pl.name as plan_name, s.billing_period, s.interval_count, s.start_date,
+                        s.expiry_date, s.next_invoice_date, s.quote_valid_until, s.created_at,
+                        (select coalesce(sum(l.quantity * l.unit_price), 0)::numeric(12,2)::text
+                           from subscription_lines l
+                          where l.subscription_id = s.id
+                            and (l.starts_on is null or l.starts_on <= ${todayP})
+                            and (l.ends_on is null or l.ends_on >= ${todayP})) as recurring_amount
+                   from subscriptions s
+                   join customers c on c.id = s.customer_id
+                   join plans pl on pl.id = s.plan_id
+                  where s.id = page.id) r on true) as rows`,
     w.params,
   );
   return rows[0];

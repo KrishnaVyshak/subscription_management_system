@@ -1,15 +1,3 @@
-import { Repeat } from 'lucide-react';
-import { useAuth } from '@/auth/context';
-import { Page, PageHeader } from '@/components/app/page-header';
-import { EmptyState } from '@/components/app/states';
-
-// Placeholder until the customer portal lands (phase 8).
-export default function PortalOverviewPage() {
-  const { user } = useAuth();
-  return (
-    <Page>
-      <PageHeader title={`Hello, ${user?.fullName ?? ''}`} />
-      <EmptyState icon={Repeat} title="Your account overview is on its way" />
-    </Page>
-  );
-}
+// The real portal overview lives in PortalPages.jsx and is imported directly by the router.
+// This file re-exports it for backwards compatibility with any direct import.
+export { PortalOverviewPage as default } from './PortalPages';

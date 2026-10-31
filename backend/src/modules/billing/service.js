@@ -9,6 +9,7 @@ import { fmt } from '../../lib/money.js';
 import * as discounts from '../discounts/engine.js';
 import { getSetting } from '../settings/routes.js';
 import { linesFor } from '../subscriptions/repo.js';
+import { withTotal } from '../../lib/http.js';
 
 const BATCH_SIZE = 5;
 
@@ -266,7 +267,7 @@ export async function listRuns({ page, pageSize }) {
       order by r.started_at desc limit $1 offset $2`,
     [pageSize, (page - 1) * pageSize],
   );
-  return { rows: rows.map(({ total, ...r }) => r), total: rows[0]?.total ?? 0 };
+  return withTotal(rows);
 }
 
 export async function getRun(id) {

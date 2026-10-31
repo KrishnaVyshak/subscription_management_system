@@ -1,5 +1,5 @@
 import { query } from '../../config/db.js';
-import { Where, pageClause, parseSort } from '../../lib/http.js';
+import { pageClause, parseSort, Where, withTotal } from '../../lib/http.js';
 
 const SORT = {
   name: 'lower(c.name)',
@@ -29,7 +29,7 @@ export async function list(f) {
       limit ${limit} offset ${offset}`,
     w.params,
   );
-  return { rows: rows.map(({ total, ...r }) => r), total: rows[0]?.total ?? 0 };
+  return withTotal(rows);
 }
 
 export async function findById(db, id) {

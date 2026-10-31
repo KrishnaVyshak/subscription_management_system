@@ -2,7 +2,15 @@ import { Router } from 'express';
 import { query } from '../../config/db.js';
 import { findRow, insertRow, updateRow } from '../../lib/crud.js';
 import { NotFoundError } from '../../lib/errors.js';
-import { Where, asyncHandler as h, pageClause, parseSort, sendData, sendList } from '../../lib/http.js';
+import {
+  Where,
+  asyncHandler as h,
+  pageClause,
+  parseSort,
+  sendData,
+  sendList,
+  withTotal,
+} from '../../lib/http.js';
 import { idParams } from '../../lib/zod.js';
 import { validate } from '../../middleware/validate.js';
 
@@ -25,11 +33,8 @@ export function simpleResource({ table, label, listSchema, createSchema, updateS
           order by ${parseSort(f.sort, sort, defaultSort)} limit ${limit} offset ${offset}`,
         w.params,
       );
-      sendList(res, rows.map(({ total, ...r }) => r), {
-        page: f.page,
-        pageSize: f.pageSize,
-        total: rows[0]?.total ?? 0,
-      });
+      const page = withTotal(rows);
+      sendList(res, page.rows, { page: f.page, pageSize: f.pageSize, total: page.total });
     }),
   );
 

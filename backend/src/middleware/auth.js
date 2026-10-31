@@ -28,6 +28,24 @@ export async function loadUser(profileId) {
   return rows[0] ?? null;
 }
 
+// Profiles are cached briefly so each request does not pay a database round trip just to
+// authenticate. Profile writes call forgetUser(); other changes show within USER_TTL_MS.
+const USER_TTL_MS = 10_000;
+const userCache = new Map();
+
+export function forgetUser(profileId) {
+  userCache.delete(profileId);
+}
+
+async function cachedUser(profileId) {
+  const hit = userCache.get(profileId);
+  if (hit && hit.expires > Date.now()) return hit.user;
+  const user = await loadUser(profileId);
+  if (userCache.size > 5000) userCache.clear();
+  if (user) userCache.set(profileId, { user, expires: Date.now() + USER_TTL_MS });
+  return user;
+}
+
 // Sets req.user = { id, email, fullName, role, customerId }.
 export async function authenticate(req, _res, next) {
   try {
@@ -42,7 +60,7 @@ export async function authenticate(req, _res, next) {
       throw new UnauthorizedError('Invalid or expired token');
     }
 
-    const user = payload.sub ? await loadUser(payload.sub) : null;
+    const user = payload.sub ? await cachedUser(payload.sub) : null;
     if (!user) throw new UnauthorizedError('No profile for this account');
     if (!user.is_active) throw new ForbiddenError('This account is deactivated');
 

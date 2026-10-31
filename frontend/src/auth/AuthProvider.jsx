@@ -51,7 +51,9 @@ async function loadProfile(userId, { force = false } = {}) {
 async function endSession(redirect) {
   writeCache(null);
   queryClient.clear();
-  await supabase.auth.signOut().catch(() => {});
+  // signOut scope 'local' only clears local storage — avoids a network round-trip when the
+  // server-side session is already gone (which is exactly the "session_id claim" error case).
+  await supabase.auth.signOut({ scope: 'local' }).catch(() => {});
   if (redirect) navigateTo(redirect, { replace: true });
 }
 
@@ -68,14 +70,43 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     let alive = true;
-    supabase.auth.getSession().then(({ data }) => alive && setSession(data.session ?? null));
-    const { data } = supabase.auth.onAuthStateChange((event, next) => {
+
+    // Subscribe first so we don't miss the initial session event.
+    const { data: sub } = supabase.auth.onAuthStateChange((event, next) => {
+      if (!alive) return;
+
       if (event === 'PASSWORD_RECOVERY') setRecovery(true);
+
+      // Supabase fires SIGNED_OUT (or TOKEN_REFRESHED with null) when the stored JWT
+      // references a session that no longer exists on the server — e.g. after a project
+      // reset, manual revocation, or the "session_id claim" error.  Clear everything
+      // locally so the user ends up at the login screen rather than a loading spinner.
+      if (event === 'SIGNED_OUT' || (event === 'TOKEN_REFRESHED' && !next)) {
+        writeCache(null);
+        queryClient.clear();
+        setSession(null);
+        return;
+      }
+
       setSession(next ?? null);
     });
+
+    // Read whatever is stored locally. If it's stale, onAuthStateChange will emit SIGNED_OUT.
+    supabase.auth.getSession().then(({ data, error }) => {
+      if (!alive) return;
+      // If Supabase itself throws the "session_id" error here, treat as signed-out.
+      if (error) {
+        writeCache(null);
+        queryClient.clear();
+        setSession(null);
+        return;
+      }
+      setSession(data.session ?? null);
+    });
+
     return () => {
       alive = false;
-      data.subscription.unsubscribe();
+      sub.subscription.unsubscribe();
     };
   }, []);
 
@@ -87,7 +118,7 @@ export function AuthProvider({ children }) {
       (err) => {
         if (!alive) return;
         // A stored session the API no longer accepts (expired, no profile): start over.
-        if (err?.status === 401) endSession();
+        if (err?.status === 401) endSession(loginPath());
         else setProfileState({ userId, me: null, error: err });
       },
     );

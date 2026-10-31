@@ -209,10 +209,8 @@ async function seedCatalog() {
   return { terms, products, plans, templates, discounts };
 }
 
-// Creates one subscription (once, keyed by its notes tag) and walks it to `status`.
+// Creates one subscription (tagged in notes) and walks it to `status`.
 async function sub(staffUser, tag, { customer, planId, templateId, startDate, expiryDate, lines, status, termId }) {
-  const existing = await one('select id from subscriptions where notes = $1', [`seed:${tag}`]);
-  if (existing) return { id: existing.id, created: false };
   const created = await subscriptions.create(
     { customerId: customer.id, planId, templateId, startDate, expiryDate, paymentTermId: termId, notes: `seed:${tag}` },
     staffUser,
@@ -225,10 +223,16 @@ async function sub(staffUser, tag, { customer, planId, templateId, startDate, ex
     'active',
   ];
   for (const to of steps) await subscriptions.transition(created.id, { to }, staffUser, startDate);
-  return { id: created.id, created: true };
+  return { id: created.id };
 }
 
+// Subscriptions, their history and payments are created only on a database without seed
+// subscriptions; later runs just bill anything that has become due. Returns null then.
 async function seedSubscriptions(staff, customers, cat) {
+  if (await one(`select 1 from subscriptions where notes like 'seed:%' limit 1`)) {
+    await runBilling({ asOfDate: today, source: 'seed' });
+    return null;
+  }
   const [priya, rahul] = staff;
   const c = customers;
   const P = Object.fromEntries(Object.entries(cat.products).map(([k, v]) => [k, v.id]));
@@ -314,21 +318,18 @@ async function seedSubscriptions(staff, customers, cat) {
     termId: cat.terms.immediate.id,
   });
 
-  const fresh = s.bulk.created;
-  if (fresh) {
-    await attach(s.welcome.id, cat.discounts.welcome.id, priya.id);
-    // History: bill up to a month ago, close Indigo's first subscription, bill to 10 days
-    // ago, pause Delta, then bill up to today.
-    await runBilling({ asOfDate: addMonths(today, -1), source: 'seed' });
-    await subscriptions.transition(
-      s.closed.id,
-      { to: 'closed', reason: 'customer_request', note: 'Moved to another vendor' },
-      priya,
-      addMonths(today, -1),
-    );
-    await runBilling({ asOfDate: addDays(today, -10), source: 'seed' });
-    await subscriptions.transition(s.paused.id, { to: 'paused', note: 'Seasonal pause' }, rahul, addDays(today, -10));
-  }
+  await attach(s.welcome.id, cat.discounts.welcome.id, priya.id);
+  // History: bill up to a month ago, close Indigo's first subscription, bill to 10 days
+  // ago, pause Delta, then bill up to today.
+  await runBilling({ asOfDate: addMonths(today, -1), source: 'seed' });
+  await subscriptions.transition(
+    s.closed.id,
+    { to: 'closed', reason: 'customer_request', note: 'Moved to another vendor' },
+    priya,
+    addMonths(today, -1),
+  );
+  await runBilling({ asOfDate: addDays(today, -10), source: 'seed' });
+  await subscriptions.transition(s.paused.id, { to: 'paused', note: 'Seasonal pause' }, rahul, addDays(today, -10));
   await runBilling({ asOfDate: today, source: 'seed' });
   return s;
 }
@@ -369,7 +370,8 @@ try {
   const { staff, customers } = await seedPeople();
   const cat = await seedCatalog();
   const s = await seedSubscriptions(staff, customers, cat);
-  await seedPayments(staff, s);
+  if (s) await seedPayments(staff, s);
+  else console.log('Seed subscriptions already exist; billed anything newly due. Use npm run reset-demo to start over.');
   const counts = await one(`
     select (select count(*) from customers) as customers,
            (select count(*) from subscriptions) as subscriptions,

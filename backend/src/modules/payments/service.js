@@ -4,11 +4,12 @@ import { BusinessRuleError, NotFoundError, ValidationError } from '../../lib/err
 import { Where, pageClause, parseSort } from '../../lib/http.js';
 import { D, fmt } from '../../lib/money.js';
 
+// Columns of the filtered set `f` in list().
 const SORT = {
-  paymentDate: 'p.payment_date',
-  amount: 'p.amount',
-  createdAt: 'p.created_at',
-  customerName: 'lower(c.name)',
+  paymentDate: 'payment_date',
+  amount: 'amount',
+  createdAt: 'created_at',
+  customerName: 'lower(customer_name)',
 };
 
 export async function paymentsForInvoice(client, invoiceId) {
@@ -95,22 +96,35 @@ export async function list(f, { customerId } = {}) {
     w.add(`(i.number ilike ${p} or c.name ilike ${p})`);
   }
   const { limit, offset } = pageClause(f);
+  // Invoice and customer joins only when searching or sorting by customer name.
+  const joins = Boolean(f.search) || f.sort?.replace(/^-/, '') === 'customerName';
+  // Totals over the filtered set, then names only for the page rows.
   const { rows } = await query(
-    `select p.*, i.number as invoice_number, c.name as customer_name,
-            pr.full_name as recorded_by_name,
-            count(*) over() as total, (sum(p.amount) over())::text as total_amount
-       from payments p
-       join invoices i on i.id = p.invoice_id
-       join customers c on c.id = p.customer_id
-       left join profiles pr on pr.id = p.recorded_by
-       ${w}
-      order by ${parseSort(f.sort, SORT, 'p.payment_date desc, p.created_at desc')}
-      limit ${limit} offset ${offset}`,
+    `with f as (
+       select p.id, p.amount, p.payment_date, p.created_at,
+              ${joins ? 'c.name' : 'null::text'} as customer_name
+         from payments p
+         ${joins ? 'join invoices i on i.id = p.invoice_id join customers c on c.id = p.customer_id' : ''}
+         ${w}
+     ),
+     page as (
+       select x.id, x.rn
+         from unnest(array(select id from f
+                            order by ${parseSort(f.sort, SORT, 'payment_date desc, created_at desc')}, id
+                            limit ${limit} offset ${offset})) with ordinality as x(id, rn)
+     )
+     select (select count(*) from f) as total,
+            (select coalesce(sum(amount), 0)::text from f) as total_amount,
+            (select coalesce(json_agg(to_jsonb(r) || jsonb_build_object('amount', r.amount::text) order by page.rn), '[]')
+               from page join lateral (
+                 select p.*, i.number as invoice_number, c.name as customer_name, pr.full_name as recorded_by_name
+                   from payments p
+                   join invoices i on i.id = p.invoice_id
+                   join customers c on c.id = p.customer_id
+                   left join profiles pr on pr.id = p.recorded_by
+                  where p.id = page.id) r on true) as rows`,
     w.params,
   );
-  return {
-    rows: rows.map(({ total, total_amount: _t, ...r }) => r),
-    total: rows[0]?.total ?? 0,
-    totalAmount: rows[0]?.total_amount ?? '0.00',
-  };
+  const { total, total_amount: totalAmount, rows: pageRows } = rows[0];
+  return { rows: pageRows, total, totalAmount };
 }

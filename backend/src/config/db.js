@@ -14,6 +14,8 @@ export const pool = new pg.Pool({
   max: 10,
   idleTimeoutMillis: 30_000,
   connectionTimeoutMillis: 5_000,
+  // A runaway query (e.g. for a client that gave up) must not hold a connection forever.
+  statement_timeout: 20_000,
 });
 
 pool.on('error', (err) => {

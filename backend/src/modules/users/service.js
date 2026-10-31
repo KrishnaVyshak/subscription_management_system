@@ -3,6 +3,7 @@ import { createAuthUser, deleteAuthUser, sendPasswordSetup } from '../../lib/aut
 import { BusinessRuleError, ConflictError, NotFoundError } from '../../lib/errors.js';
 import * as authRepo from '../auth/repo.js';
 import * as repo from './repo.js';
+import { forgetUser } from '../../middleware/auth.js';
 
 export function list(filters) {
   return repo.list(filters);
@@ -24,7 +25,9 @@ export async function update(actorId, id, body) {
       rule: 'CUSTOMER_ROLE_FIXED',
     });
   }
-  return repo.update(id, body);
+  const updated = await repo.update(id, body);
+  forgetUser(id);
+  return updated;
 }
 
 // Only the admin creates staff. The new user sets a password through the emailed link.

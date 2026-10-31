@@ -63,7 +63,7 @@ async function applyMigrations(url) {
       try {
         await client.query(fs.readFileSync(path.join(migrationsDir, file), 'utf8'));
       } catch (err) {
-        throw new Error(`Migration ${file} failed: ${err.message}`);
+        throw new Error(`Migration ${file} failed: ${err.message}`, { cause: err });
       }
     }
   } finally {

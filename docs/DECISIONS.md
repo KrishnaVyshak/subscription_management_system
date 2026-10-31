@@ -1,6 +1,14 @@
 # Decisions
 
-Where `docs/BACKEND_SPEC.md` is silent or does not match this repo, this file records what was chosen and why. Newest sections are added per build phase.
+Where `docs/BACKEND_SPEC.md` is silent or does not match this repo, this file records what was chosen and why. Sections follow the build phases.
+
+**The six topics the spec asks for:**
+- **Staff permissions**: see *Customers, templates, subscriptions*, plus admin-only discount attachment under *Discounts*.
+- **Discount stacking and usage counting**: see *Discounts*.
+- **Billing in advance**: see *Billing, invoices, tax*.
+- **Renewal term**: see *Customers, templates, subscriptions*, under "Renewal term".
+- **MRR definition**: see *Reports and jobs*.
+- **Cancel behaviour**: see *Billing, invoices, tax*, under "Cancel". Customer cancellation of a subscription is under *Portal*.
 
 ## Repo mapping
 - The spec's `server/` is `backend/`, and the frontend lives in `frontend/`. Domain code is in `backend/src/domain`, modules are in `backend/src/modules/<name>`, and CLI scripts are in `backend/scripts`.
@@ -141,3 +149,16 @@ Where `docs/BACKEND_SPEC.md` is silent or does not match this repo, this file re
   - Discounts past `end_date` or at `usage_limit` get `is_active = false`.
   - If billing is already running, the job records a skip instead of failing.
 - `POST /api/jobs/:name/run` (admin) takes `daily` or one of `expire-quotations`, `activate-subscriptions`, `run-billing`, `auto-close`, `deactivate-discounts`, plus an optional `asOfDate`. A future `asOfDate` needs `DEMO_MODE`.
+
+## Seeds, performance, docs (phase 10)
+- `npm run seed` creates real Supabase Auth users for 2 staff and 5 portal customers (password `Demo@12345`) and upserts them. Catalog rows are upserted by name.
+  - Subscriptions, their history (closing, pausing, the discount attachment) and payments are created only when no `seed:`-tagged subscription exists.
+  - Later runs only bill what has become due.
+  - Dates are relative to today, so overdue and partial-payment states always exist. `npm run reset-demo` truncates the business tables (profiles and settings are kept) and reseeds.
+- `npm run seed:large` needs the demo catalog. It writes rows directly in 1,000-row multi-value inserts and uses the same document-number sequences as the API.
+  - Subscriptions are left fully billed up to today, so a billing run afterwards reports `generated: 0`.
+  - The mix is 7,600 monthly, 600 yearly and 400 weekly active subscriptions, plus 400 paused, 500 closed and 500 not yet active.
+  - About 85 % of invoices are paid.
+- **Document numbers past 99,999**: `lpad()` truncated `100000` to `10000`, which caused duplicates. Migration `0008` pads to at least 5 digits and lets larger numbers grow (`INV/2026/100000`). The large seed found this.
+- `npm run perf-check` runs the API in-process against `DATABASE_URL`, signs an admin JWT with `SUPABASE_JWT_SECRET`, and runs autocannon (10 connections × 5 s) on every list, report and detail endpoint. autocannon reports p97.5 rather than p95, so p97.5 is used as a stricter upper bound. The script exits non-zero when any value reaches 2 s or any request fails.
+- New env keys, all optional: `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `DEMO_MODE`, `JOBS_ENABLED`, `MAIL_FROM`, `TEST_DATABASE_URL`.

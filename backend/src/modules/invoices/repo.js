@@ -1,14 +1,15 @@
 import { Where, parseSort } from '../../lib/http.js';
+import { D, fmt } from '../../lib/money.js';
 
 const SORT = {
-  number: 'number',
-  invoiceDate: 'invoice_date',
-  dueDate: 'due_date',
-  total: 'total',
-  amountDue: 'amount_due',
-  customerName: 'lower(customer_name)',
-  status: 'status',
-  createdAt: 'created_at',
+  number: 'i.number',
+  invoiceDate: 'i.invoice_date',
+  dueDate: 'i.due_date',
+  total: 'i.total',
+  amountDue: 'i.amount_due',
+  customerName: 'lower(c.name)',
+  status: 'i.status',
+  createdAt: 'i.created_at',
 };
 
 const MONEY = ['subtotal', 'discount_total', 'tax_total', 'total', 'amount_paid', 'amount_due'];
@@ -22,6 +23,14 @@ export const OVERVIEW_SQL = `
     join subscriptions s on s.id = i.subscription_id
     join customers c on c.id = i.customer_id`;
 
+// Same rule as invoice_overview.is_overdue, on alias i.
+const OVERDUE = `(i.status = 'confirmed' and i.due_date < (now() at time zone 'Asia/Kolkata')::date
+                  and i.amount_due > 0)`;
+
+const needsCustomer = (f) => Boolean(f.search) || f.sort?.replace(/^-/, '') === 'customerName';
+
+// Base filters (`w`, aliases i and c) plus the status/overdue condition (`cond`), which
+// statusCounts ignores.
 function filters(f) {
   const w = new Where();
   if (f.customerId) w.add('i.customer_id = $?', f.customerId);
@@ -30,49 +39,71 @@ function filters(f) {
   if (f.to) w.add('i.invoice_date <= $?', f.to);
   if (f.search) {
     const p = w.param(`%${f.search}%`);
-    w.add(`(i.number ilike ${p} or c.name ilike ${p} or s.number ilike ${p})`);
+    w.add(`(i.number ilike ${p} or c.name ilike ${p}
+            or exists (select 1 from subscriptions sx where sx.id = i.subscription_id and sx.number ilike ${p}))`);
   }
-  const narrow = [];
-  if (f.status?.length) narrow.push(`status = any(${w.param(f.status)}::invoice_status[])`);
-  if (f.overdue !== undefined) narrow.push(f.overdue ? 'is_overdue' : 'not is_overdue');
-  return { w, narrow: narrow.length ? `where ${narrow.join(' and ')}` : '' };
+  const cond = [];
+  if (f.status?.length) cond.push(`i.status = any(${w.param(f.status)}::invoice_status[])`);
+  if (f.overdue !== undefined) cond.push(f.overdue ? OVERDUE : `not ${OVERDUE}`);
+  return { w, cond: cond.length ? cond.join(' and ') : 'true' };
 }
 
-// One statement: page rows, total, per-status counts and money totals of the filtered set.
+const order = (f) => `${parseSort(f.sort, SORT, 'i.invoice_date desc, i.number desc')}, i.id`;
+
+// Status counts and totals come from one grouped pass (by status and overdue), so nothing is
+// materialised; full rows are fetched only for the page ids.
 export async function list(db, f) {
-  const { w, narrow } = filters(f);
+  const { w, cond } = filters(f);
   const offset = (f.page - 1) * f.pageSize;
+  const from = `from invoices i ${needsCustomer(f) ? 'join customers c on c.id = i.customer_id' : ''}`;
+  const whereCond = w.parts.length ? `${w} and ${cond}` : `where ${cond}`;
   const { rows } = await db.query(
-    `with f as (${OVERVIEW_SQL} ${w}),
-     ranked as (
-       select f.*, row_number() over (order by ${parseSort(f.sort, SORT, 'invoice_date desc, number desc')}, id) as rn
-         from f ${narrow}
-     )
-     select (select count(*) from ranked) as total,
-            (select coalesce(json_object_agg(status, n), '{}')
-               from (select status, count(*) as n from f group by status) x) as status_counts,
-            (select json_build_object(
-                      'total', coalesce(sum(total), 0)::text,
-                      'amount_paid', coalesce(sum(amount_paid), 0)::text,
-                      'amount_due', coalesce(sum(amount_due) filter (where status = 'confirmed'), 0)::text)
-               from ranked) as totals,
-            (select coalesce(json_agg(
-                      (to_jsonb(r) - 'rn' - 'customer_snapshot' - 'company_snapshot') || ${moneyAsText('r')}
-                      order by rn), '[]')
-               from ranked r where rn > ${offset} and rn <= ${offset + f.pageSize}) as rows`,
+    `select
+       (select coalesce(json_agg(g), '[]')
+          from (select i.status, ${OVERDUE} as overdue, count(*) as n,
+                       sum(i.total)::text as total, sum(i.amount_paid)::text as amount_paid,
+                       sum(i.amount_due)::text as amount_due
+                  ${from} ${w} group by 1, 2) g) as groups,
+       (select coalesce(json_agg(
+                 (to_jsonb(r) - 'customer_snapshot' - 'company_snapshot') || ${moneyAsText('r')}
+                 order by p.rn), '[]')
+          from unnest(array(select i.id ${from} ${whereCond} order by ${order(f)}
+                            limit ${f.pageSize} offset ${offset})) with ordinality as p(id, rn)
+          join lateral (${OVERVIEW_SQL} where i.id = p.id) r on true) as rows`,
     w.params,
   );
-  return rows[0];
+  return { rows: rows[0].rows, ...summarise(rows[0].groups, f) };
+}
+
+// statusCounts over every status; total and money totals over the rows the filters keep.
+function summarise(groups, f) {
+  const statusCounts = {};
+  let total = 0;
+  const sums = { total: new D(0), amount_paid: new D(0), amount_due: new D(0) };
+  for (const g of groups) {
+    statusCounts[g.status] = (statusCounts[g.status] ?? 0) + g.n;
+    const keep =
+      (!f.status?.length || f.status.includes(g.status)) &&
+      (f.overdue === undefined || g.overdue === f.overdue);
+    if (!keep) continue;
+    total += g.n;
+    sums.total = sums.total.plus(g.total);
+    sums.amount_paid = sums.amount_paid.plus(g.amount_paid);
+    if (g.status === 'confirmed') sums.amount_due = sums.amount_due.plus(g.amount_due);
+  }
+  return {
+    total,
+    status_counts: statusCounts,
+    totals: { total: fmt(sums.total), amount_paid: fmt(sums.amount_paid), amount_due: fmt(sums.amount_due) },
+  };
 }
 
 // Every filtered row (for CSV export), ordered like the list.
 export async function listAll(db, f) {
-  const { w, narrow } = filters(f);
+  const { w, cond } = filters(f);
   const { rows } = await db.query(
-    `with f as (${OVERVIEW_SQL} ${w})
-     select * from f ${narrow}
-      order by ${parseSort(f.sort, SORT, 'invoice_date desc, number desc')}, id
-      limit 50000`,
+    `${OVERVIEW_SQL} ${w.parts.length ? `${w} and ${cond}` : `where ${cond}`}
+      order by ${order(f)} limit 50000`,
     w.params,
   );
   return rows;
